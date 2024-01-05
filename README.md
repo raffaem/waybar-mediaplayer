@@ -3,11 +3,13 @@
 This is a mediaplayer for waybar.
 
 ![showcase](./showcase.png)
+![notification](./notification.png)
 
 It features:
 1. Progress bar
 1. Tooltip that displays title, author and album
 1. Album cover art (click to zoom)
+1. Optional notification on song change
 1. Click to play/pause, scroll up/down to scroll up/down on the playlist
 
 It requires `playerctl` to be installed.

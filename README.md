@@ -3,6 +3,7 @@
 This is a mediaplayer for waybar.
 
 ![showcase](./showcase.png)
+
 ![notification](./notification.png)
 
 It features:
@@ -53,3 +54,6 @@ Put the following in `$HOME/.config/waybar/style.css`:
 }
 @import "./mediaplayer/mediaplayer-progressbar.css";
 ```
+
+To disable notifications, put `nootification=False` in `./src/mediaplayer`.
+

@@ -28,10 +28,17 @@ Run `$HOME/.config/waybar/mediaplayer/mediaplayer-progressbar-gencss` to generat
 
 Put the following in `$HOME/.config/waybar/config`, substituting `ncspot` with the name of your player (you can find out the name of your player with `playerctl --list-all`):
 ```
-"modules-left": ["custom/mediaplayer"],
+"modules-left": ["image", "custom/mediaplayer"],
 ```
 
 ```
+"image": {
+  "path": "/tmp/waybar-mediaplayer-art",
+  "size": 32,
+  "signal": 2,
+  "on-click": "feh --auto-zoom --borderless --title 'feh-float' /tmp/waybar-mediaplayer-art"
+},
+
 "custom/mediaplayer": {
   "exec": "$HOME/.config/waybar/mediaplayer/mediaplayer --player ncspot",
   "return-type": "json",

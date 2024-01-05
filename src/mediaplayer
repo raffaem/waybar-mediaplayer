@@ -1,0 +1,346 @@
+#!/usr/bin/env python3
+# Copyright 2023 Raffaele Mancuso
+# SPDX-License-Identifier: MIT
+# Inspired by: https://github.com/Alexays/Waybar/blob/master/resources/custom_modules/mediaplayer.py
+# This requires `playerctl`: `sudo pacman -S playerctl`
+# Call it like `mediaplayerctl --player player_name`
+# Find player_name with `playerctl --list-all`
+import argparse
+import json
+import logging
+import math
+import subprocess
+import sys
+import time
+
+import gi
+import requests
+
+gi.require_version("Playerctl", "2.0")
+from gi.repository import GLib, Playerctl
+
+# Suppose that a song lasts 3 min
+# and compute the time interval (in ms) corresponding to
+# 1% of the song
+# 3 min -> x/(3*60*1000) = 1%
+refresh_interval = math.ceil((3 * 60 * 1000) / 100)
+# logger.debug(f"Refresh interval (ms): {refresh_interval}")
+
+# Set this to True if you want a notification when the song changes
+notification = True
+# min interval between notifications, in seconds
+notification_min_interval = 2
+
+# Internal global variables
+logger = logging.getLogger(__name__)
+class_decs = 0
+artfp = "/tmp/waybar-mediaplayer-art"
+last_metadata = {"mpris:trackid": None}
+last_notification_time = 0
+
+
+def write_output(text=" ", class_="", tooltip=""):
+    output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
+    sys.stdout.write(json.dumps(output) + "\n")
+    sys.stdout.flush()
+
+
+def on_playback_status(player, status, manager):
+    logger.info("I was called")
+    logger.debug(f"status={status}")
+    if status == Playerctl.PlaybackStatus.PLAYING:
+        logger.debug("Registering `refresh_interval` callback")
+        GLib.timeout_add(refresh_interval, on_refresh_interval, manager)
+    # Update the icon in the progressbar (play/pause)
+    logger.debug("Calling update_progressbar")
+    update_progressbar(manager, player)
+    logger.debug("Returning True")
+    return True
+
+
+def gen_track_info(player):
+    metadata = player.props.metadata
+    artist = player.get_artist()
+    # artist = metadata["xesam:artist"][0]
+    title = player.get_title()
+    # title = metadata["xesam:title"]
+    track_info = ""
+
+    if (
+        player.props.player_name == "spotify"
+        and "mpris:trackid" in metadata.keys()
+        and ":ad:" in metadata["mpris:trackid"]
+    ):
+        track_info = "AD PLAYING"
+    elif artist != "" and title != "":
+        # artistarr = artist.split(",")
+        # if len(artistarr) > 1:
+        #     artist = artistarr[0] + " et al."
+        # track_info = f"{artist} - {title}"
+        track_info = f"{title}"
+    else:
+        track_info = title
+
+    if track_info:
+        if player.props.status != "Playing":
+            track_info = " " + track_info
+        else:
+            track_info = " " + track_info
+
+    return track_info
+
+
+def on_metadata(player, metadata, manager):
+    logger.debug("I was called")
+    update_metadata(player, metadata, manager)
+    logger.debug("Returning True")
+    return True
+
+
+def is_metadata_different(old, new):
+    # "xesam:album": "Risk (Expanded Edition - Remastered)",
+    # "xesam:artist": [
+    #    "Megadeth"
+    # ],
+    # "xesam:title": "Seven (Remastered)",
+    key_album = "xesam:album"
+    key_artist = "xesam:artist"
+    key_title = "xesam:title"
+    return (
+        (old.get(key_album, None) != new.get(key_album, None))
+        | (old.get(key_artist) != new.get(key_artist))
+        | (old.get(key_title) != new.get(key_title))
+    )
+
+
+def update_metadata(player, metadata, manager):
+    global last_metadata
+    global last_notification_time
+    logger.info("I was called")
+    metadata = dict(metadata)
+    metadata_str = json.dumps(metadata, indent=4, sort_keys=True)
+    last_metadata_str = json.dumps(last_metadata, indent=4, sort_keys=True)
+    logger.debug(f"New Metadata={metadata_str}")
+    logger.debug(f"Last Metadata={last_metadata_str}")
+    # Check that the metadata is different than the previous one
+    if not is_metadata_different(last_metadata, metadata):
+        logger.debug("Metadata is the same as the previous one. Returning True")
+        return True
+    else:
+        logger.debug("Metadata is different than previous one. Continuing")
+    # Check that the player is playing
+    # is_playing = player.props.status == "Playing"
+    # if not is_playing:
+    #     logger.debug("The player is paused. Returning True")
+    #     return True
+    # Update last metadata
+    last_metadata = metadata
+    # Download album art
+    if "mpris:artUrl" in metadata:
+        logger.debug("Updating album art")
+        art_url = metadata["mpris:artUrl"]
+        resp = requests.get(art_url)
+        with open(artfp, "wb") as fh:
+            fh.write(resp.content)
+            logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
+        # Convert album art to PNG
+        # fnott only supports PNG and SVG, not JPEG
+        # cmd = [
+        #     "magick",
+        #     "convert",
+        #     artfp,
+        #     artfp+".png"
+        # ]
+        # logger.debug(f"Running {cmd}")
+        # subprocess.run(cmd)
+        # Update album art on bar
+        cmd = ["pkill", "-RTMIN+2", "waybar"]
+        subprocess.run(cmd)
+    # Update progressbar
+    update_progressbar(manager, player)
+    # Notification
+    notexp = time.time() - last_notification_time
+    if notification and notexp >= notification_min_interval:
+        cmd = [
+            "notify-send",
+            "--app-name=waybar-mediaplayer",
+            "--icon=" + artfp,
+            player.get_title(),  # summary
+            player.get_artist(),  # body
+        ]
+        logger.debug(f"Running {cmd}")
+        subprocess.run(cmd)
+        last_notification_time = time.time()
+    logger.debug("Returning")
+
+
+def on_player_appeared(manager, player, selected_player=None):
+    logger.debug("I was called")
+    if player is not None and (
+        selected_player is None or player.name == selected_player
+    ):
+        init_player(manager, player)
+    else:
+        logger.debug("New player appeared, but it's not the selected player, skipping")
+
+    logger.debug("Returning True")
+    return True
+
+
+def on_player_vanished(manager, player):
+    logger.info("I was called")
+    write_output()
+    logger.info("Returning True")
+    return True
+
+
+def align_text(s):
+    ml = max([len(x) for x in s])
+    for i in range(0, len(s)):
+        delta = int((ml - len(s[i])) / 2)
+        s[i] = " " * delta + s[i]
+    return s
+
+
+def on_refresh_interval(manager):
+    logger.debug("I was called")
+    # If there are no players, stop calling this handler
+    if len(manager.props.players) == 0:
+        logger.debug("Returning False")
+        return False
+    player = manager.props.players[0]
+    # If we are not playing, stop calling this handler
+    is_playing = player.props.status == "Playing"
+    if not is_playing:
+        logger.debug("Returning False")
+        return False
+    # Update progressbar and return
+    update_progressbar(manager, player)
+    logger.debug("Returning True")
+    return True
+
+
+# Called
+# 1. By `on_refresh_interval`
+# 2. By `on_metadata`
+def update_progressbar(manager, player):
+    logger.debug("I was called")
+    # Get percentage in the track
+    pos = player.get_position()
+    logger.debug(f"pos={pos}")
+    # If it doesn't work, use CLI utility
+    if pos == 0:
+        cmd = ["playerctl", "--player=" + player.props.player_name, "position"]
+        pos = subprocess.run(cmd, capture_output=True, text=True).stdout
+        pos = float(pos) * (10**6)
+        logger.debug(f"pos from CLI={pos}")
+    metadata = player.props.metadata
+    length = metadata["mpris:length"]
+    logger.debug(f"length={length}")
+    if length == 0:
+        # It's important to return True to keep the handler going
+        return True
+    perc = round((pos / length) * 100, class_decs)
+    if class_decs == 0:
+        perc = str(int(perc))
+    else:
+        perc = str(perc).replace(".", "-")
+    # Write output
+    track_info = gen_track_info(player)
+    s = [player.get_title(), player.get_artist(), player.get_album()]
+    align_text(s)
+    tooltip = f"<span variant='title-caps' font_weight='bold'>{s[0]}</span>\n"
+    tooltip += f"{s[1]}\n"
+    tooltip += f"<i>{s[2]}</i>"
+    # tooltip += f"<img src='" + artfp + "'></img>"
+    write_output(track_info, perc, tooltip)
+    # It's important to return True to keep the handler going
+    logger.debug("Returning True")
+    return True
+
+
+def init_player(manager, name):
+    logger.debug("I was called")
+    logger.debug(f"name.name={name.name}")
+    # Register handlers
+    player = Playerctl.Player.new_from_name(name)
+    player.connect("playback-status", on_playback_status, manager)
+    player.connect("metadata", on_metadata, manager)
+    manager.manage_player(player)
+    # Call update_metadata to update progress bar and send notification
+    logger.debug("Calling update_metadata")
+    update_metadata(player, player.props.metadata, manager)
+    # If we are playing, register refresh interval callback
+    is_playing = player.props.status == "Playing"
+    if is_playing:
+        GLib.timeout_add(refresh_interval, on_refresh_interval, manager)
+    logger.debug("Returning None")
+
+
+def signal_handler(sig, frame):
+    logger.debug("I was called")
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+    # loop.quit()
+    sys.exit(0)
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    # Increase verbosity with every occurrence of -v
+    parser.add_argument("-v", "--verbose", action="count", default=0)
+    # Define which player we're listening to
+    # Find it with `playerctl --list-all`
+    parser.add_argument("--player", required=True)
+    return parser.parse_args()
+
+
+def main():
+    arguments = parse_arguments()
+
+    # Initialize logging
+    logging.basicConfig(
+        stream=sys.stderr,
+        level=logging.DEBUG,
+        format="[%(funcName)s] [%(levelname)s] %(message)s",
+    )
+
+    # Logging is set by default to WARN and higher.
+    # With every occurrence of -v it's lowered by one
+    loglevel = max((3 - arguments.verbose) * 10, 0)
+    logger.setLevel(loglevel)
+    logging.getLogger("urllib3").setLevel(loglevel)
+
+    # Log the sent command line arguments
+    logger.info("I was called")
+    logger.debug("Arguments received {}".format(vars(arguments)))
+
+    manager = Playerctl.PlayerManager()
+    loop = GLib.MainLoop()
+
+    fn = lambda *args: on_player_appeared(*args, arguments.player)
+    manager.connect("name-appeared", fn)
+    manager.connect("player-vanished", on_player_vanished)
+
+    # signal.signal(signal.SIGINT, signal_handler)
+    # signal.signal(signal.SIGTERM, signal_handler)
+    # signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+    ini = False
+    for player in manager.props.player_names:
+        logger.debug(f"Found player '{player.name}'")
+        if arguments.player is not None and arguments.player != player.name:
+            logger.debug("This is not the filtered player, skipping it")
+            continue
+        logger.debug("Initializing player")
+        init_player(manager, player)
+        ini = True
+
+    if not ini:
+        write_output()
+
+    loop.run()
+
+
+if __name__ == "__main__":
+    main()

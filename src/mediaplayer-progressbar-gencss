@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import numpy as np
+import os
+from pathlib import Path
+
+# Choose background color
+surface_color = "@surface0"
+# Choose text color
+overlay_color = "@overlay0"
+# Choose interval, in %, between two consecutive movements
+interval = 1
+
+# Internals
+format_pc = lambda x: f"{x:.1f}"
+format_class = lambda x: f"{x:.0f}"
+outfp = Path(os.environ["HOME"]) / ".config" / "waybar" / "mediaplayer-progressbar.css"
+print(f"Writing output to {outfp}")
+
+outfh = open(outfp, "w", encoding="utf8")
+
+for i in np.arange(0, 100, interval):
+    class_ = format_class(i).replace(".", "-")
+    i2 = i + (interval / 10)
+    outfh.write(
+        f"""#custom-mediaplayer.{class_} {{
+    background-image: linear-gradient(
+    to right,
+    {overlay_color} {format_pc(i)}%,
+    {surface_color} {format_pc(i2)}%
+    );
+}}\n"""
+    )
+
+outfh.close()

@@ -45,7 +45,6 @@ class_decs = 0
 artfp = "/tmp/waybar-mediaplayer-art"
 last_metadata = None
 last_notification_time = 0
-last_perc = None
 # Whether refresh_interval callback is registered
 is_refint = False
 

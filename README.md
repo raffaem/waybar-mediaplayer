@@ -1,10 +1,15 @@
 # waybar-mediaplayer
 
-This is a mediaplayer for waybar.
+This is a mediaplayer for [waybar](https://github.com/Alexays/Waybar).
 
-![showcase](./showcase.png)
+Widget with album art and progress bar:
+![progress_bar](./showcase/progress_bar.gif)
 
-![notification](./notification.png)
+Notification with album art, track ticle and track artist
+![notification](./showcase/notification.png)
+
+Tooltip with track title, track artist and track album:
+![tooltip](./showcase/tooltip.png)
 
 It features:
 1. Progress bar

@@ -19,11 +19,13 @@ import requests
 gi.require_version("Playerctl", "2.0")
 from gi.repository import GLib, Playerctl
 
+# refresh interval in ms
 # Suppose that a song lasts 3 min
 # and compute the time interval (in ms) corresponding to
 # 1% of the song
 # 3 min -> x/(3*60*1000) = 1%
-refresh_interval = math.ceil((3 * 60 * 1000) / 100)
+# refresh_interval = math.ceil((3 * 60 * 1000) / 100)
+refresh_interval = 400
 # logger.debug(f"Refresh interval (ms): {refresh_interval}")
 
 # Set this to True if you want a notification when the song changes
@@ -45,6 +47,7 @@ class_decs = 0
 artfp = "/tmp/waybar-mediaplayer-art"
 last_metadata = None
 last_art_url = None
+last_rot = 0
 last_notification_time = 0
 # Whether refresh_interval callback is registered
 is_refint = False
@@ -126,25 +129,39 @@ def register_refresh_interval_callback(player, manager):
         is_refint = True
 
 
+def rotate_str_left(s, rot):
+    return s[rot:] + s[:rot]
+
 def gen_widget_text(player):
+    global last_rot
     metadata = player.props.metadata
     artist = player.get_artist()
     # artist = metadata["xesam:artist"][0]
     title = player.get_title()
     # title = metadata["xesam:title"]
 
-    text = " " if player.props.status != "Playing" else " "
+    icon = " " if player.props.status != "Playing" else " "
 
     if (
         player.props.player_name == "spotify"
         and "mpris:trackid" in metadata.keys()
         and ":ad:" in metadata["mpris:trackid"]
     ):
-        text += "AD PLAYING"
+        song_info = "AD PLAYING"
     else:
-        text += title
+        song_info = title
 
-    text = left_text(text)
+    tl = len(icon) + len(song_info)
+
+    if tl < widget_length:
+        text = left_text(icon + song_info)
+    else:
+        song_info += " // "
+        l_rot = (last_rot + 1) % len(song_info)
+        song_info = rotate_str_left(song_info, l_rot)
+        text = icon + song_info
+        last_rot = l_rot
+
     return text
 
 def download_art(art_url):

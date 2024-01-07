@@ -14,7 +14,6 @@ It features:
 1. Click to play/pause, scroll up/down to scroll up/down on the playlist
 
 It requires `playerctl` to be installed.
-
 To install:
 
 ```
@@ -62,5 +61,7 @@ Put the following in `$HOME/.config/waybar/style.css`:
 @import "./mediaplayer/mediaplayer-progressbar.css";
 ```
 
-To disable notifications, put `nootification=False` in `./src/mediaplayer`.
+To disable notifications, put `notification=False` in `./src/mediaplayer`.
+
+To change widget's length, set `min-length` and `max-length` in `$HOME/.config/waybar/config`, and set `widget_length` in `$HOME/.config/waybar/mediaplayer/mediaplayer`. These 3 values should all be set to the same value.
 

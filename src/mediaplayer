@@ -39,7 +39,7 @@ last_metadata = {"mpris:trackid": None}
 last_notification_time = 0
 
 
-def write_output(text=" ", class_="", tooltip=""):
+def write_output(text=" ", class_="0", tooltip=""):
     output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
     sys.stdout.write(json.dumps(output) + "\n")
     sys.stdout.flush()

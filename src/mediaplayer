@@ -31,6 +31,10 @@ notification = True
 # min interval between notifications, in seconds
 notification_min_interval = 2
 
+# width width
+# this must be the same as the min-width and max-width set in config file
+widget_width=20
+
 # Internal global variables
 logger = logging.getLogger(__name__)
 class_decs = 0
@@ -39,7 +43,7 @@ last_metadata = {"mpris:trackid": None}
 last_notification_time = 0
 
 
-def write_output(text=" ", class_="0", tooltip=""):
+def write_output(text=""+(" "*(widget_width-1)), class_="0", tooltip=""):
     output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
     sys.stdout.write(json.dumps(output) + "\n")
     sys.stdout.flush()
@@ -87,6 +91,7 @@ def gen_track_info(player):
         else:
             track_info = " " + track_info
 
+    track_info = left_text(track_info)
     return track_info
 
 
@@ -194,11 +199,19 @@ def on_player_vanished(manager, player):
     return True
 
 
-def align_text(s):
+def left_text(s):
+    l = len(s)
+    if l > widget_width:
+        return s
+    missing = widget_width-l
+    s = s + " "*(missing)
+    return s
+
+def center_text(s):
     ml = max([len(x) for x in s])
     for i in range(0, len(s)):
         delta = int((ml - len(s[i])) / 2)
-        s[i] = " " * delta + s[i]
+        s[i] = (" " * delta) + s[i]
     return s
 
 
@@ -248,7 +261,7 @@ def update_progressbar(manager, player):
     # Write output
     track_info = gen_track_info(player)
     s = [player.get_title(), player.get_artist(), player.get_album()]
-    align_text(s)
+    center_text(s)
     tooltip = f"<span variant='title-caps' font_weight='bold'>{s[0]}</span>\n"
     tooltip += f"{s[1]}\n"
     tooltip += f"<i>{s[2]}</i>"

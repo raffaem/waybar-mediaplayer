@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 class_decs = 0
 artfp = "/tmp/waybar-mediaplayer-art"
 last_metadata = None
+last_art_url = None
 last_notification_time = 0
 # Whether refresh_interval callback is registered
 is_refint = False
@@ -151,7 +152,7 @@ def gen_widget_text(player):
 
 
 def update_metadata(player, metadata, manager):
-    global last_notification_time
+    global last_notification_time, last_art_url
     logger.info("I was called")
     metadata = dict(metadata)
     # Update progressbar
@@ -162,13 +163,15 @@ def update_metadata(player, metadata, manager):
     if "mpris:artUrl" in metadata:
         logger.debug("Updating album art")
         art_url = metadata["mpris:artUrl"]
-        resp = requests.get(art_url)
-        with open(artfp, "wb") as fh:
-            fh.write(resp.content)
-            logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
-        # Update album art on bar
-        cmd = ["pkill", "-RTMIN+2", "waybar"]
-        subprocess.run(cmd)
+        if art_url != last_art_url:
+            resp = requests.get(art_url)
+            with open(artfp, "wb") as fh:
+                fh.write(resp.content)
+                logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
+            # Update album art on bar
+            cmd = ["pkill", "-RTMIN+2", "waybar"]
+            subprocess.run(cmd)
+            last_art_url = art_url
     # Notification
     notexp = time.time() - last_notification_time
     if notification and notexp >= notification_min_interval:

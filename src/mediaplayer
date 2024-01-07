@@ -34,7 +34,7 @@ notification_min_interval = 2
 
 # Widget width
 # This must be the same as the min-length and max-length set in config file
-widget_length=20
+widget_length = 20
 
 # Minimum percentage change needed to update the progress bar
 min_perc_update = 1
@@ -43,145 +43,11 @@ min_perc_update = 1
 logger = logging.getLogger(__name__)
 class_decs = 0
 artfp = "/tmp/waybar-mediaplayer-art"
-last_metadata = {"mpris:trackid": None}
+last_metadata = None
 last_notification_time = 0
 last_perc = None
-
-
-def write_output(text=""+(" "*(widget_length-1)), class_="0", tooltip=""):
-    output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
-    sys.stdout.write(json.dumps(output) + "\n")
-    sys.stdout.flush()
-
-
-def on_playback_status(player, status, manager):
-    logger.info("I was called")
-    logger.debug(f"status={status}")
-    if status == Playerctl.PlaybackStatus.PLAYING:
-        logger.debug("Registering `refresh_interval` callback")
-        GLib.timeout_add(refresh_interval, on_refresh_interval, manager)
-    # Update the icon in the progressbar (play/pause)
-    logger.debug("Calling update_progressbar")
-    update_progressbar(manager, player)
-    logger.debug("Returning True")
-    return True
-
-
-def gen_track_info(player):
-    metadata = player.props.metadata
-    artist = player.get_artist()
-    # artist = metadata["xesam:artist"][0]
-    title = player.get_title()
-    # title = metadata["xesam:title"]
-    track_info = ""
-
-    if (
-        player.props.player_name == "spotify"
-        and "mpris:trackid" in metadata.keys()
-        and ":ad:" in metadata["mpris:trackid"]
-    ):
-        track_info = "AD PLAYING"
-    elif artist != "" and title != "":
-        # artistarr = artist.split(",")
-        # if len(artistarr) > 1:
-        #     artist = artistarr[0] + " et al."
-        # track_info = f"{artist} - {title}"
-        track_info = f"{title}"
-    else:
-        track_info = title
-
-    if track_info:
-        if player.props.status != "Playing":
-            track_info = " " + track_info
-        else:
-            track_info = " " + track_info
-
-    track_info = left_text(track_info)
-    return track_info
-
-
-def on_metadata(player, metadata, manager):
-    logger.debug("I was called")
-    update_metadata(player, metadata, manager)
-    logger.debug("Returning True")
-    return True
-
-
-def is_metadata_different(old, new):
-    # "xesam:album": "Risk (Expanded Edition - Remastered)",
-    # "xesam:artist": [
-    #    "Megadeth"
-    # ],
-    # "xesam:title": "Seven (Remastered)",
-    key_album = "xesam:album"
-    key_artist = "xesam:artist"
-    key_title = "xesam:title"
-    return (
-        (old.get(key_album, None) != new.get(key_album, None))
-        | (old.get(key_artist) != new.get(key_artist))
-        | (old.get(key_title) != new.get(key_title))
-    )
-
-
-def update_metadata(player, metadata, manager):
-    global last_metadata, last_notification_time, last_perc
-    logger.info("I was called")
-    metadata = dict(metadata)
-    metadata_str = json.dumps(metadata, indent=4, sort_keys=True)
-    last_metadata_str = json.dumps(last_metadata, indent=4, sort_keys=True)
-    logger.debug(f"New Metadata={metadata_str}")
-    logger.debug(f"Last Metadata={last_metadata_str}")
-    # Check that the metadata is different than the previous one
-    if not is_metadata_different(last_metadata, metadata):
-        logger.debug("Metadata is the same as the previous one. Returning True")
-        return True
-    else:
-        logger.debug("Metadata is different than previous one. Continuing")
-    # Check that the player is playing
-    # is_playing = player.props.status == "Playing"
-    # if not is_playing:
-    #     logger.debug("The player is paused. Returning True")
-    #     return True
-    # Update last metadata
-    last_metadata = metadata
-    last_perc = None
-    # Download album art
-    if "mpris:artUrl" in metadata:
-        logger.debug("Updating album art")
-        art_url = metadata["mpris:artUrl"]
-        resp = requests.get(art_url)
-        with open(artfp, "wb") as fh:
-            fh.write(resp.content)
-            logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
-        # Convert album art to PNG
-        # fnott only supports PNG and SVG, not JPEG
-        # cmd = [
-        #     "magick",
-        #     "convert",
-        #     artfp,
-        #     artfp+".png"
-        # ]
-        # logger.debug(f"Running {cmd}")
-        # subprocess.run(cmd)
-        # Update album art on bar
-        cmd = ["pkill", "-RTMIN+2", "waybar"]
-        subprocess.run(cmd)
-    # Update progressbar
-    update_progressbar(manager, player, check_perc_change=False)
-    # Notification
-    notexp = time.time() - last_notification_time
-    if notification and notexp >= notification_min_interval:
-        cmd = [
-            "notify-send",
-            "--app-name=waybar-mediaplayer",
-            "--icon=" + artfp,
-            player.get_title(),  # summary
-            player.get_artist(),  # body
-        ]
-        logger.debug(f"Running {cmd}")
-        subprocess.run(cmd)
-        last_notification_time = time.time()
-    logger.debug("Returning")
+# Whether refresh_interval callback is registered
+is_refint = False
 
 
 def on_player_appeared(manager, player, selected_player=None):
@@ -204,13 +70,130 @@ def on_player_vanished(manager, player):
     return True
 
 
+def on_metadata(player, metadata, manager):
+    logger.debug("I was called")
+    update_metadata(player, metadata, manager)
+    logger.debug("Returning True")
+    return True
+
+
+def on_playback_status(player, status, manager):
+    logger.info("I was called")
+    logger.debug(f"status={status}")
+    # Update the icon in the progressbar (play/pause)
+    logger.debug("Calling register_refresh_interval_callback")
+    register_refresh_interval_callback(player, manager)
+    logger.debug("Calling update_progressbar")
+    update_progressbar(manager, player)
+    logger.debug("Returning True")
+    return True
+
+
+def on_refresh_interval(manager):
+    global is_refint
+    logger.debug("I was called")
+    # If there are no players, stop calling this handler
+    if len(manager.props.players) == 0:
+        logger.debug("Returning False")
+        is_refint = False
+        return False
+    player = manager.props.players[0]
+    # If we are not playing, stop calling this handler
+    is_playing = player.props.status == "Playing"
+    if not is_playing:
+        logger.debug("Returning False")
+        is_refint = False
+        return False
+    # Update progressbar and return
+    update_progressbar(manager, player)
+    logger.debug("Returning True")
+    return True
+
+
+def write_output(text="" + (" " * (widget_length - 1)), class_="0", tooltip=""):
+    output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
+    sys.stdout.write(json.dumps(output) + "\n")
+    sys.stdout.flush()
+
+
+def register_refresh_interval_callback(player, manager):
+    global is_refint
+    logger.info("I was called")
+    is_playing = player.props.status == "Playing"
+    if is_playing and (not is_refint):
+        logger.debug("Registering `refresh_interval` callback")
+        GLib.timeout_add(refresh_interval, on_refresh_interval, manager)
+        is_refint = True
+
+
+def gen_widget_text(player):
+    metadata = player.props.metadata
+    artist = player.get_artist()
+    # artist = metadata["xesam:artist"][0]
+    title = player.get_title()
+    # title = metadata["xesam:title"]
+
+    if (
+        player.props.player_name == "spotify"
+        and "mpris:trackid" in metadata.keys()
+        and ":ad:" in metadata["mpris:trackid"]
+    ):
+        text = "AD PLAYING"
+    else:
+        text = title
+
+    if player.props.status != "Playing":
+        text = " " + text
+    else:
+        text = " " + text
+
+    text = left_text(text)
+    return text
+
+
+def update_metadata(player, metadata, manager):
+    global last_notification_time
+    logger.info("I was called")
+    metadata = dict(metadata)
+    # Update progressbar
+    updated = update_progressbar(manager, player)
+    if not updated:
+        return False
+    # Download album art
+    if "mpris:artUrl" in metadata:
+        logger.debug("Updating album art")
+        art_url = metadata["mpris:artUrl"]
+        resp = requests.get(art_url)
+        with open(artfp, "wb") as fh:
+            fh.write(resp.content)
+            logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
+        # Update album art on bar
+        cmd = ["pkill", "-RTMIN+2", "waybar"]
+        subprocess.run(cmd)
+    # Notification
+    notexp = time.time() - last_notification_time
+    if notification and notexp >= notification_min_interval:
+        cmd = [
+            "notify-send",
+            "--app-name=waybar-mediaplayer",
+            "--icon=" + artfp,
+            player.get_title(),  # summary
+            player.get_artist(),  # body
+        ]
+        logger.debug(f"Running {cmd}")
+        subprocess.run(cmd)
+        last_notification_time = time.time()
+    logger.debug("Returning")
+
+
 def left_text(s):
     l = len(s)
     if l > widget_length:
         return s
-    missing = widget_length-l
-    s = s + " "*(missing)
+    missing = widget_length - l
+    s = s + " " * (missing)
     return s
+
 
 def center_text(s):
     ml = max([len(x) for x in s])
@@ -220,28 +203,12 @@ def center_text(s):
     return s
 
 
-def on_refresh_interval(manager):
-    logger.debug("I was called")
-    # If there are no players, stop calling this handler
-    if len(manager.props.players) == 0:
-        logger.debug("Returning False")
-        return False
-    player = manager.props.players[0]
-    # If we are not playing, stop calling this handler
-    is_playing = player.props.status == "Playing"
-    if not is_playing:
-        logger.debug("Returning False")
-        return False
-    # Update progressbar and return
-    update_progressbar(manager, player, check_perc_change=True)
-    logger.debug("Returning True")
-    return True
-
-
 # Called
 # 1. By `on_refresh_interval`
 # 2. By `on_metadata`
-def update_progressbar(manager, player, check_perc_change=False):
+# 3. By `on_playback_status`
+def update_progressbar(manager, player):
+    global last_metadata
     logger.debug("I was called")
     # Get percentage in the track
     pos = player.get_position()
@@ -252,39 +219,50 @@ def update_progressbar(manager, player, check_perc_change=False):
         pos = subprocess.run(cmd, capture_output=True, text=True).stdout
         pos = float(pos) * (10**6)
         logger.debug(f"pos from CLI={pos}")
-    metadata = player.props.metadata
-    length = metadata["mpris:length"]
+    pmetadata = player.props.metadata
+    length = pmetadata["mpris:length"]
     logger.debug(f"length={length}")
     if length == 0:
-        # It's important to return True to keep the handler going
-        return True
+        return False
+    # Compute song percentage
     perc = round((pos / length) * 100, class_decs)
-    # Check if percentage has changed since last time
-    global last_perc
-    if last_perc:
-        if check_perc_change:
-            if (perc - last_perc) < min_perc_update:
-                # It's important to return True to keep the handler going
-                return True
-            else:
-                last_perc = perc
-    else:
-        last_perc = perc
+    metadata = {
+        "title": player.get_title(),
+        "artist": player.get_artist(),
+        "album": player.get_album(),
+        "pos": pos,
+        "length": length,
+        "perc": perc,
+    }
+    if metadata == last_metadata:
+        return False
+    # Check if percentage has not changed enough since last time
+    if (
+        last_metadata
+        and metadata["title"] == last_metadata["title"]
+        and metadata["artist"] == last_metadata["artist"]
+        and metadata["album"] == last_metadata["album"]
+        and metadata["length"] == last_metadata["length"]
+        and metadata["perc"] > last_metadata["perc"] # we need to reset the bar if we restart the song
+        and (metadata["perc"] - last_metadata["perc"]) < min_perc_update
+    ):
+        return False
     # Convert percentage in string
     if class_decs == 0:
         perc_str = str(int(perc))
     else:
         perc_str = str(perc).replace(".", "-")
     # Write output
-    track_info = gen_track_info(player)
-    s = [player.get_title(), player.get_artist(), player.get_album()]
+    widget_text = gen_widget_text(player)
+    s = [metadata["title"], metadata["artist"], metadata["album"]]
     center_text(s)
     tooltip = f"<span variant='title-caps' font_weight='bold'>{s[0]}</span>\n"
     tooltip += f"{s[1]}\n"
     tooltip += f"<i>{s[2]}</i>"
     # tooltip += f"<img src='" + artfp + "'></img>"
-    write_output(track_info, perc_str, tooltip)
+    write_output(widget_text, perc_str, tooltip)
     # It's important to return True to keep the handler going
+    last_metadata = metadata
     logger.debug("Returning True")
     return True
 
@@ -301,9 +279,7 @@ def init_player(manager, name):
     logger.debug("Calling update_metadata")
     update_metadata(player, player.props.metadata, manager)
     # If we are playing, register refresh interval callback
-    is_playing = player.props.status == "Playing"
-    if is_playing:
-        GLib.timeout_add(refresh_interval, on_refresh_interval, manager)
+    register_refresh_interval_callback(player, manager)
     logger.debug("Returning None")
 
 

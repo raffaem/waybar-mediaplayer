@@ -14,7 +14,7 @@ interval = 1
 # Internals
 format_pc = lambda x: f"{x:.1f}"
 format_class = lambda x: f"{x:.0f}"
-outfp = Path(os.environ["HOME"]) / ".config" / "waybar" / "mediaplayer-progressbar.css"
+outfp = Path(os.environ["HOME"]) / ".config" / "waybar" / "mediaplayer" / "mediaplayer-progressbar.css"
 print(f"Writing output to {outfp}")
 
 outfh = open(outfp, "w", encoding="utf8")

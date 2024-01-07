@@ -133,23 +133,42 @@ def gen_widget_text(player):
     title = player.get_title()
     # title = metadata["xesam:title"]
 
+    text = " " if player.props.status != "Playing" else " "
+
     if (
         player.props.player_name == "spotify"
         and "mpris:trackid" in metadata.keys()
         and ":ad:" in metadata["mpris:trackid"]
     ):
-        text = "AD PLAYING"
+        text += "AD PLAYING"
     else:
-        text = title
-
-    if player.props.status != "Playing":
-        text = " " + text
-    else:
-        text = " " + text
+        text += title
 
     text = left_text(text)
     return text
 
+def download_art(art_url):
+    logger.debug("Updating album art")
+    resp = requests.get(art_url)
+    with open(artfp, "wb") as fh:
+        fh.write(resp.content)
+        logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
+    # Update album art on bar
+    cmd = ["pkill", "-RTMIN+2", "waybar"]
+    subprocess.run(cmd)
+
+def send_notification(summary, body):
+    global last_notification_time
+    cmd = [
+        "notify-send",
+        "--app-name=waybar-mediaplayer",
+        "--icon=" + artfp,
+        summary,
+        body
+    ]
+    logger.debug(f"Running {cmd}")
+    subprocess.run(cmd)
+    last_notification_time = time.time()
 
 def update_metadata(player, metadata, manager):
     global last_notification_time, last_art_url
@@ -160,31 +179,14 @@ def update_metadata(player, metadata, manager):
     if not updated:
         return False
     # Download album art
-    if "mpris:artUrl" in metadata:
-        logger.debug("Updating album art")
-        art_url = metadata["mpris:artUrl"]
-        if art_url != last_art_url:
-            resp = requests.get(art_url)
-            with open(artfp, "wb") as fh:
-                fh.write(resp.content)
-                logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
-            # Update album art on bar
-            cmd = ["pkill", "-RTMIN+2", "waybar"]
-            subprocess.run(cmd)
-            last_art_url = art_url
+    art_url = metadata.get("mpris:artUrl", None)
+    if art_url and art_url != last_art_url:
+        download_art(art_url)
+        last_art_url = art_url
     # Notification
     notexp = time.time() - last_notification_time
     if notification and notexp >= notification_min_interval:
-        cmd = [
-            "notify-send",
-            "--app-name=waybar-mediaplayer",
-            "--icon=" + artfp,
-            player.get_title(),  # summary
-            player.get_artist(),  # body
-        ]
-        logger.debug(f"Running {cmd}")
-        subprocess.run(cmd)
-        last_notification_time = time.time()
+        send_notification(player.get_title(), player.get_artist())
     logger.debug("Returning")
 
 

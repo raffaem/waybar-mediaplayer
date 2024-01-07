@@ -28,12 +28,16 @@ refresh_interval = math.ceil((3 * 60 * 1000) / 100)
 
 # Set this to True if you want a notification when the song changes
 notification = True
-# min interval between notifications, in seconds
+# Min interval between notifications, in seconds
+# Avoids overflowing the notification bar in case you zap through songs
 notification_min_interval = 2
 
-# width width
-# this must be the same as the min-width and max-width set in config file
-widget_width=20
+# Widget width
+# This must be the same as the min-length and max-length set in config file
+widget_length=20
+
+# Minimum percentage change needed to update the progress bar
+min_perc_update = 1
 
 # Internal global variables
 logger = logging.getLogger(__name__)
@@ -41,9 +45,10 @@ class_decs = 0
 artfp = "/tmp/waybar-mediaplayer-art"
 last_metadata = {"mpris:trackid": None}
 last_notification_time = 0
+last_perc = None
 
 
-def write_output(text=""+(" "*(widget_width-1)), class_="0", tooltip=""):
+def write_output(text=""+(" "*(widget_length-1)), class_="0", tooltip=""):
     output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
     sys.stdout.write(json.dumps(output) + "\n")
     sys.stdout.flush()
@@ -119,8 +124,7 @@ def is_metadata_different(old, new):
 
 
 def update_metadata(player, metadata, manager):
-    global last_metadata
-    global last_notification_time
+    global last_metadata, last_notification_time, last_perc
     logger.info("I was called")
     metadata = dict(metadata)
     metadata_str = json.dumps(metadata, indent=4, sort_keys=True)
@@ -140,6 +144,7 @@ def update_metadata(player, metadata, manager):
     #     return True
     # Update last metadata
     last_metadata = metadata
+    last_perc = None
     # Download album art
     if "mpris:artUrl" in metadata:
         logger.debug("Updating album art")
@@ -162,7 +167,7 @@ def update_metadata(player, metadata, manager):
         cmd = ["pkill", "-RTMIN+2", "waybar"]
         subprocess.run(cmd)
     # Update progressbar
-    update_progressbar(manager, player)
+    update_progressbar(manager, player, check_perc_change=False)
     # Notification
     notexp = time.time() - last_notification_time
     if notification and notexp >= notification_min_interval:
@@ -201,9 +206,9 @@ def on_player_vanished(manager, player):
 
 def left_text(s):
     l = len(s)
-    if l > widget_width:
+    if l > widget_length:
         return s
-    missing = widget_width-l
+    missing = widget_length-l
     s = s + " "*(missing)
     return s
 
@@ -228,7 +233,7 @@ def on_refresh_interval(manager):
         logger.debug("Returning False")
         return False
     # Update progressbar and return
-    update_progressbar(manager, player)
+    update_progressbar(manager, player, check_perc_change=True)
     logger.debug("Returning True")
     return True
 
@@ -236,7 +241,7 @@ def on_refresh_interval(manager):
 # Called
 # 1. By `on_refresh_interval`
 # 2. By `on_metadata`
-def update_progressbar(manager, player):
+def update_progressbar(manager, player, check_perc_change=False):
     logger.debug("I was called")
     # Get percentage in the track
     pos = player.get_position()
@@ -254,10 +259,22 @@ def update_progressbar(manager, player):
         # It's important to return True to keep the handler going
         return True
     perc = round((pos / length) * 100, class_decs)
-    if class_decs == 0:
-        perc = str(int(perc))
+    # Check if percentage has changed since last time
+    global last_perc
+    if last_perc:
+        if check_perc_change:
+            if (perc - last_perc) < min_perc_update:
+                # It's important to return True to keep the handler going
+                return True
+            else:
+                last_perc = perc
     else:
-        perc = str(perc).replace(".", "-")
+        last_perc = perc
+    # Convert percentage in string
+    if class_decs == 0:
+        perc_str = str(int(perc))
+    else:
+        perc_str = str(perc).replace(".", "-")
     # Write output
     track_info = gen_track_info(player)
     s = [player.get_title(), player.get_artist(), player.get_album()]
@@ -266,7 +283,7 @@ def update_progressbar(manager, player):
     tooltip += f"{s[1]}\n"
     tooltip += f"<i>{s[2]}</i>"
     # tooltip += f"<img src='" + artfp + "'></img>"
-    write_output(track_info, perc, tooltip)
+    write_output(track_info, perc_str, tooltip)
     # It's important to return True to keep the handler going
     logger.debug("Returning True")
     return True

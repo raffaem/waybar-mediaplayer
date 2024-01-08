@@ -28,10 +28,13 @@ artfp = "/tmp/waybar-mediaplayer-art"
 last_metadata = None
 last_art_url = None
 last_rot = 0
+last_rot_time = 0
 last_notification_time = 0
 # Whether refresh_interval callback is registered
 is_refint = False
 format_class = None
+icons = {"play": " ", "stop": " "}
+is_text_rotating = None
 
 
 def on_player_appeared(manager, player, selected_player=None):
@@ -116,15 +119,17 @@ def register_refresh_interval_callback(player, manager):
 def rotate_str_left(s, rot):
     return s[rot:] + s[:rot]
 
+
 def gen_widget_text(player):
-    global last_rot
+    global last_rot, last_rot_time, is_text_rotating
+
     metadata = player.props.metadata
     artist = player.get_artist()
     # artist = metadata["xesam:artist"][0]
     title = player.get_title()
     # title = metadata["xesam:title"]
 
-    icon = " " if player.props.status != "Playing" else " "
+    icon = icons["play"] if player.props.status != "Playing" else icons["stop"]
 
     if (
         player.props.player_name == "spotify"
@@ -135,18 +140,24 @@ def gen_widget_text(player):
     else:
         song_info = title.strip()
 
-    tl = len(icon) + len(song_info)
-
-    if tl < config["widget_length"]:
+    if not is_text_rotating:
         text = left_text(icon + song_info)
     else:
         song_info += " " + config["sepchar"] + " "
-        l_rot = (last_rot + 1) % len(song_info)
+        elapsed = (time.time() - last_rot_time) * 1000
+        rot_needs_update = elapsed > config["text_rot_int"]
+        if rot_needs_update:
+            to_add = math.floor(elapsed / config["text_rot_int"])
+            l_rot = (last_rot + to_add) % len(song_info)
+            last_rot = l_rot
+            last_rot_time = time.time()
+        else:
+            l_rot = last_rot
         song_info = rotate_str_left(song_info, l_rot)
         text = icon + song_info
-        last_rot = l_rot
 
     return text
+
 
 def download_art(art_url):
     logger.debug("Updating album art")
@@ -158,6 +169,7 @@ def download_art(art_url):
     cmd = ["pkill", "-RTMIN+2", "waybar"]
     subprocess.run(cmd)
 
+
 def send_notification(summary, body):
     global last_notification_time
     cmd = [
@@ -165,14 +177,15 @@ def send_notification(summary, body):
         "--app-name=waybar-mediaplayer",
         "--icon=" + artfp,
         summary,
-        body
+        body,
     ]
     logger.debug(f"Running {cmd}")
     subprocess.run(cmd)
     last_notification_time = time.time()
 
+
 def update_metadata(player, metadata, manager):
-    global last_notification_time, last_art_url
+    global last_notification_time, last_art_url, is_text_rotating
     logger.info("I was called")
     metadata = dict(metadata)
     # Update progressbar
@@ -188,6 +201,10 @@ def update_metadata(player, metadata, manager):
     notexp = time.time() - last_notification_time
     if config["is_notification"] and notexp >= config["notification_min_interval"]:
         send_notification(player.get_title(), player.get_artist())
+    # Does text need rotation?
+    is_text_rotating = (
+        len(player.get_title()) + len(icons["stop"]) > config["widget_length"]
+    )
     logger.debug("Returning")
 
 
@@ -207,8 +224,10 @@ def center_text(s):
         s[i] = (" " * delta) + s[i]
     return s
 
+
 def gen_class(perc):
     return "perc" + format_class(perc).replace(".", "-")
+
 
 # Called
 # 1. By `on_refresh_interval`
@@ -244,16 +263,18 @@ def update_progressbar(manager, player):
     if metadata == last_metadata:
         return False
     # Check if percentage has not changed enough since last time
-    diff = metadata["perc"] - last_metadata["perc"] if last_metadata else None
-    if (
+    elapsed = (time.time() - last_rot_time) * 1000
+    rot_needs_update = elapsed > config["text_rot_int"]
+    diff = metadata["perc"] - last_metadata["perc"] if last_metadata else 99999
+    pbar_needs_update = diff > config["interval"]
+    same_song = (
         last_metadata
         and metadata["title"] == last_metadata["title"]
         and metadata["artist"] == last_metadata["artist"]
         and metadata["album"] == last_metadata["album"]
         and metadata["length"] == last_metadata["length"]
-        and diff >= 0 # we need to reset the bar if we restart the song
-        and diff < config["interval"]
-    ):
+    )
+    if same_song and not pbar_needs_update and not rot_needs_update:
         return False
     # Write output
     widget_text = gen_widget_text(player)
@@ -333,7 +354,7 @@ def main():
     with open(fp, "r") as fh:
         global config
         config = json.load(fh)
-    assert(type(config)==dict)
+    assert type(config) == dict
 
     # Function to generate CSS classes
     global format_class

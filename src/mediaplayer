@@ -12,6 +12,7 @@ import math
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import gi
 import requests
@@ -19,30 +20,9 @@ import requests
 gi.require_version("Playerctl", "2.0")
 from gi.repository import GLib, Playerctl
 
-config = {
-# refresh interval in ms
-# Suppose that a song lasts 3 min
-# and compute the time interval (in ms) corresponding to
-# 1% of the song
-# 3 min -> x/(3*60*1000) = 1%
-# refresh_interval = math.ceil((3 * 60 * 1000) / 100)
-"refresh_interval": 400,
-
-# Set this to True if you want a notification when the song changes
-"is_notification": False,
-# Min interval between notifications, in seconds
-# Avoids overflowing the notification bar in case you zap through songs
-"notification_min_interval": 2,
-
-# Widget width
-# This must be the same as the min-length and max-length set in config file
-"widget_length": 20,
-
-# Minimum percentage change needed to update the progress bar
-"min_perc_update": 1
-}
 
 # Internal global variables
+config = None
 logger = logging.getLogger(__name__)
 class_decs = 0
 artfp = "/tmp/waybar-mediaplayer-art"
@@ -114,7 +94,10 @@ def on_refresh_interval(manager):
     return True
 
 
-def write_output(text="" + (" " * (config["widget_length"] - 1)), class_="0", tooltip=""):
+def write_output(text=None, class_="0", tooltip=""):
+    global config
+    if text is None:
+        text = "" + (" " * (config["widget_length"] - 1))
     output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
     sys.stdout.write(json.dumps(output) + "\n")
     sys.stdout.flush()
@@ -335,6 +318,7 @@ def main():
 
     # Logging is set by default to WARN and higher.
     # With every occurrence of -v it's lowered by one
+    # until it reaches 0
     loglevel = max((3 - arguments.verbose) * 10, 0)
     logger.setLevel(loglevel)
     logging.getLogger("urllib3").setLevel(loglevel)
@@ -342,6 +326,16 @@ def main():
     # Log the sent command line arguments
     logger.info("I was called")
     logger.debug("Arguments received {}".format(vars(arguments)))
+
+    # Read configuration from file
+    fp = Path(sys.argv[0]).parent.resolve() / "config.json"
+    if not fp.is_file():
+        logging.critical(f"ERROR: Configuration file {fp} not found")
+        sys.exit(1)
+    with open(fp, "r") as fh:
+        global config
+        config = json.load(fh)
+    assert(type(config)==dict)
 
     manager = Playerctl.PlayerManager()
     loop = GLib.MainLoop()

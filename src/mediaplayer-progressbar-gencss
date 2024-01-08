@@ -4,17 +4,24 @@ import numpy as np
 import os
 from pathlib import Path
 
-# Choose background color
-surface_color = "@surface0"
-# Choose text color
-overlay_color = "@overlay0"
-# Choose interval, in %, between two consecutive movements
-interval = 1
+# Read config file
+fp = Path(sys.argv[0]).parent.resolve() / "config.json"
+if not fp.is_file():
+    logging.critical(f"ERROR: Configuration file {fp} not found")
+    sys.exit(1)
+with open(fp, "r") as fh:
+    global config
+    config = json.load(fh)
+assert(type(config)==dict)
+
+overlay_color = config["overlay_color"]
+surface_color = config["surface_color"]
+interval = config["interval"]
 
 # Internals
 format_pc = lambda x: f"{x:.1f}"
 format_class = lambda x: f"{x:.0f}"
-outfp = Path(os.environ["HOME"]) / ".config" / "waybar" / "mediaplayer" / "mediaplayer-progressbar.css"
+outfp = Path(sys.argv[0]).parent.resolve() / "mediaplayer-progressbar.css"
 print(f"Writing output to {outfp}")
 
 outfh = open(outfp, "w", encoding="utf8")

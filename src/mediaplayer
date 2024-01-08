@@ -14,7 +14,6 @@ import sys
 import time
 from pathlib import Path
 from pprint import pprint
-
 import gi
 import requests
 
@@ -32,6 +31,7 @@ last_rot = 0
 last_notification_time = 0
 # Whether refresh_interval callback is registered
 is_refint = False
+format_class = None
 
 
 def on_player_appeared(manager, player, selected_player=None):
@@ -208,7 +208,7 @@ def center_text(s):
     return s
 
 def gen_class(perc):
-    return "perc" + config["format_class"](perc).replace(".", "-")
+    return "perc" + format_class(perc).replace(".", "-")
 
 # Called
 # 1. By `on_refresh_interval`
@@ -336,12 +336,12 @@ def main():
     assert(type(config)==dict)
 
     # Function to generate CSS classes
+    global format_class
     interval = config["interval"]
     digits = math.floor(math.log10(interval))
     digits = max(0, math.fabs(digits))
-    config["digits"] = int(digits)
-    del digits
-    config["format_class"] = lambda x: str(round(x, config["digits"]))
+    digits = int(digits)
+    format_class = lambda x: str(round(x, digits))
 
     manager = Playerctl.PlayerManager()
     loop = GLib.MainLoop()

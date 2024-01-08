@@ -1,10 +1,11 @@
 {
-	"refresh_interval": 100,
+	"refresh_interval": 500,
 	"is_notification": false,
 	"notification_min_interval": 2,
 	"widget_length": 20,
 	"sepchar": "",
 	"surface_color": "@surface0",
 	"overlay_color": "@overlay0",
-	"interval": 0.1
+	"interval": 0.1,
+	"text_rot_int": 1000
 }

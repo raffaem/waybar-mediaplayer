@@ -7,5 +7,6 @@
 	"surface_color": "@surface0",
 	"overlay_color": "@overlay0",
 	"interval": 0.1,
-	"text_rot_int": 1000
+	"text_rot_int": 1000,
+	"length_factor": 1
 }

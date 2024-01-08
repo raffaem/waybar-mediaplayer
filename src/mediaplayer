@@ -251,7 +251,8 @@ def update_progressbar(manager, player):
     if length == 0:
         return False
     # Compute song percentage
-    perc = round((pos / length) * 100, 2)
+    perc = (pos / (length/config["length_factor"])) * 100
+    perc = min(perc, 100.0)
     metadata = {
         "title": player.get_title(),
         "artist": player.get_artist(),

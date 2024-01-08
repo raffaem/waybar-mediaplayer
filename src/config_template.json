@@ -4,8 +4,8 @@
 	"notification_min_interval": 2,
 	"widget_length": 20,
 	"sepchar": "",
-	"surface_color": "@surface0",
-	"overlay_color": "@overlay0",
+	"surface_color": "black",
+	"overlay_color": "grey",
 	"interval": 0.1,
 	"text_rot_int": 1000,
 	"length_factor": 1

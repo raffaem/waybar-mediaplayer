@@ -21,7 +21,10 @@ It features:
 1. Optional notification on song change
 1. Click to play/pause, scroll up/down to scroll up/down on the playlist
 
-It requires `playerctl` to be installed.
+# Installation
+
+It requires `playerctl` to be installed. The default configuration use Nerd Fonts, so the default configuration requires waybar to use a Nerd Font.
+
 To install:
 
 ```
@@ -29,7 +32,7 @@ mkdir -p $HOME/.config/waybar/mediaplayer
 cp ./src/* $HOME/.config/waybar/mediaplayer/
 ```
 
-Open `$HOME/.config/waybar/mediaplayer/mediaplayer-progressbar-gencss`, and choose your colors for background and overlay (in CSS notation).
+Open `$HOME/.config/waybar/mediaplayer/config.json` with a text editor and personalize your configuration.
 
 Run `$HOME/.config/waybar/mediaplayer/mediaplayer-progressbar-gencss` to generate the necessary CSS files for the progress bar.
 
@@ -63,13 +66,13 @@ Put the following in `$HOME/.config/waybar/style.css`:
 ```
 #custom-mediaplayer
 {
-	font-size: 16px;
+  font-size: 16px;
   border-radius: 2%;
 }
 @import "./mediaplayer/mediaplayer-progressbar.css";
 ```
 
-To disable notifications, put `notification=False` in `./src/mediaplayer`.
+To disable notifications, put `is_notification=false` in `config.json`.
 
-To change widget's length, set `min-length` and `max-length` in `$HOME/.config/waybar/config`, and set `widget_length` in `$HOME/.config/waybar/mediaplayer/mediaplayer`. These 3 values should all be set to the same value.
+To change widget's length, set `min-length` and `max-length` in `$HOME/.config/waybar/config`, and set `widget_length` in `config.json`. These 3 values should all be set to the same value.
 

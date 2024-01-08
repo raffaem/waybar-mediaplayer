@@ -26,7 +26,7 @@ To install:
 
 ```
 mkdir -p $HOME/.config/waybar/mediaplayer
-cp ./src/* $HOME/.config/waybar/mediaplayer
+cp ./src/* $HOME/.config/waybar/mediaplayer/
 ```
 
 Open `$HOME/.config/waybar/mediaplayer/mediaplayer-progressbar-gencss`, and choose your colors for background and overlay (in CSS notation).

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import sys
 import json
+import math
 
 # Read config file
 fp = Path(sys.argv[0]).parent.resolve() / "config.json"
@@ -19,17 +20,21 @@ assert(type(config)==dict)
 overlay_color = config["overlay_color"]
 surface_color = config["surface_color"]
 interval = config["interval"]
+digits = math.floor(math.log10(interval))
+digits = max(0, math.fabs(digits))
+digits = int(digits)
+print(f"Decimal points: "+str(digits))
 
 # Internals
-format_pc = lambda x: f"{x:.1f}"
-format_class = lambda x: f"{x:.0f}"
+format_pc = lambda x: str(round(x, digits+1))
+format_class = lambda x: str(round(x, digits))
 outfp = Path(sys.argv[0]).parent.resolve() / "mediaplayer-progressbar.css"
 print(f"Writing output to {outfp}")
 
 outfh = open(outfp, "w", encoding="utf8")
 
 for i in np.arange(0, 100+interval, interval):
-    class_ = format_class(i).replace(".", "-")
+    class_ = "perc" + format_class(i).replace(".", "-")
     i2 = i + (interval / 10)
     outfh.write(
 f"""#custom-mediaplayer.{class_} {{

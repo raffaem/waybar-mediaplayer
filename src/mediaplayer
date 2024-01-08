@@ -25,7 +25,6 @@ from gi.repository import GLib, Playerctl
 # Internal global variables
 config = None
 logger = logging.getLogger(__name__)
-class_decs = 0
 artfp = "/tmp/waybar-mediaplayer-art"
 last_metadata = None
 last_art_url = None
@@ -95,7 +94,7 @@ def on_refresh_interval(manager):
     return True
 
 
-def write_output(text=None, class_="0", tooltip=""):
+def write_output(text=None, class_=None, tooltip=""):
     global config
     if text is None:
         text = "" + (" " * (config["widget_length"] - 1))
@@ -208,6 +207,8 @@ def center_text(s):
         s[i] = (" " * delta) + s[i]
     return s
 
+def gen_class(perc):
+    return "perc" + config["format_class"](perc).replace(".", "-")
 
 # Called
 # 1. By `on_refresh_interval`
@@ -231,7 +232,7 @@ def update_progressbar(manager, player):
     if length == 0:
         return False
     # Compute song percentage
-    perc = round((pos / length) * 100, class_decs)
+    perc = round((pos / length) * 100, 2)
     metadata = {
         "title": player.get_title(),
         "artist": player.get_artist(),
@@ -251,14 +252,9 @@ def update_progressbar(manager, player):
         and metadata["album"] == last_metadata["album"]
         and metadata["length"] == last_metadata["length"]
         and diff >= 0 # we need to reset the bar if we restart the song
-        and diff < config["min_perc_update"]
+        and diff < config["interval"]
     ):
         return False
-    # Convert percentage in string
-    if class_decs == 0:
-        perc_str = str(int(perc))
-    else:
-        perc_str = str(perc).replace(".", "-")
     # Write output
     widget_text = gen_widget_text(player)
     s = [metadata["title"], metadata["artist"], metadata["album"]]
@@ -267,7 +263,7 @@ def update_progressbar(manager, player):
     tooltip += f"{s[1]}\n"
     tooltip += f"<i>{s[2]}</i>"
     # tooltip += f"<img src='" + artfp + "'></img>"
-    write_output(widget_text, perc_str, tooltip)
+    write_output(widget_text, gen_class(perc), tooltip)
     # It's important to return True to keep the handler going
     last_metadata = metadata
     logger.debug("Returning True")
@@ -338,6 +334,14 @@ def main():
         global config
         config = json.load(fh)
     assert(type(config)==dict)
+
+    # Function to generate CSS classes
+    interval = config["interval"]
+    digits = math.floor(math.log10(interval))
+    digits = max(0, math.fabs(digits))
+    config["digits"] = int(digits)
+    del digits
+    config["format_class"] = lambda x: str(round(x, config["digits"]))
 
     manager = Playerctl.PlayerManager()
     loop = GLib.MainLoop()

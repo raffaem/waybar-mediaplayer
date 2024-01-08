@@ -134,14 +134,14 @@ def gen_widget_text(player):
     ):
         song_info = "AD PLAYING"
     else:
-        song_info = title
+        song_info = title.strip()
 
     tl = len(icon) + len(song_info)
 
     if tl < config["widget_length"]:
         text = left_text(icon + song_info)
     else:
-        song_info += " // "
+        song_info += " " + config["sepchar"] + " "
         l_rot = (last_rot + 1) % len(song_info)
         song_info = rotate_str_left(song_info, l_rot)
         text = icon + song_info

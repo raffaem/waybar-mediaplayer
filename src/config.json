@@ -1,7 +1,8 @@
 {
-	"refresh_interval": 400,
+	"refresh_interval": 10,
 	"is_notification": false,
 	"notification_min_interval": 2,
 	"widget_length": 20,
-	"min_perc_update": 1
+	"min_perc_update": 1,
+	"sepchar": ""
 }

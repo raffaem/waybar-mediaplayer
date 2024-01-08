@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from pprint import pprint
 
 import gi
 import requests
@@ -242,14 +243,15 @@ def update_progressbar(manager, player):
     if metadata == last_metadata:
         return False
     # Check if percentage has not changed enough since last time
+    diff = metadata["perc"] - last_metadata["perc"] if last_metadata else None
     if (
         last_metadata
         and metadata["title"] == last_metadata["title"]
         and metadata["artist"] == last_metadata["artist"]
         and metadata["album"] == last_metadata["album"]
         and metadata["length"] == last_metadata["length"]
-        and metadata["perc"] > last_metadata["perc"] # we need to reset the bar if we restart the song
-        and (metadata["perc"] - last_metadata["perc"]) < config["min_perc_update"]
+        and diff >= 0 # we need to reset the bar if we restart the song
+        and diff < config["min_perc_update"]
     ):
         return False
     # Convert percentage in string

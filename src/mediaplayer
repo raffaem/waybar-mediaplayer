@@ -99,8 +99,10 @@ def on_refresh_interval(manager):
 
 def write_output(text=None, class_=None, tooltip=""):
     global config
-    if text is None:
+    if not text:
         text = "" + (" " * (config["widget_length"] - 1))
+    if not class_:
+        class_ = gen_class(0.0)
     output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
     sys.stdout.write(json.dumps(output) + "\n")
     sys.stdout.flush()
@@ -226,6 +228,8 @@ def center_text(s):
 
 
 def gen_class(perc):
+    if type(perc) != float:
+        raise Exception(f"{perc} ({type(perc)}) is not a float")
     return "perc" + format_class(perc).replace(".", "-")
 
 

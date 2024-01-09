@@ -13,13 +13,11 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from pprint import pprint
 import gi
 import requests
-
-gi.require_version("Playerctl", "2.0")
+from functools import partial
 from gi.repository import GLib, Playerctl
-
+gi.require_version("Playerctl", "2.0")
 
 # Internal global variables
 config = None
@@ -126,7 +124,7 @@ def gen_widget_text(player):
     global last_rot, last_rot_time, is_text_rotating
 
     metadata = player.props.metadata
-    artist = player.get_artist()
+    # artist = player.get_artist()
     # artist = metadata["xesam:artist"][0]
     title = player.get_title()
     # title = metadata["xesam:title"]
@@ -211,10 +209,10 @@ def update_metadata(player, metadata, manager):
 
 
 def left_text(s):
-    l = len(s)
-    if l > config["widget_length"]:
+    le = len(s)
+    if le > config["widget_length"]:
         return s
-    missing = config["widget_length"] - l
+    missing = config["widget_length"] - le
     s = s + " " * (missing)
     return s
 
@@ -228,7 +226,7 @@ def center_text(s):
 
 
 def gen_class(perc):
-    if type(perc) != float:
+    if not isinstance(perc, float):
         raise Exception(f"{perc} ({type(perc)}) is not a float")
     return "perc" + format_class(perc).replace(".", "-")
 
@@ -359,7 +357,7 @@ def main():
     with open(fp, "r") as fh:
         global config
         config = json.load(fh)
-    assert type(config) == dict
+    assert isinstance(config,dict)
 
     # Function to generate CSS classes
     global format_class
@@ -367,12 +365,12 @@ def main():
     digits = math.floor(math.log10(interval))
     digits = max(0, math.fabs(digits))
     digits = int(digits)
-    format_class = lambda x: str(round(x, digits))
+    format_class = partial(lambda x,y: str(round(x, y)), y=digits)
 
     manager = Playerctl.PlayerManager()
     loop = GLib.MainLoop()
 
-    fn = lambda *args: on_player_appeared(*args, arguments.player)
+    fn = partial(on_player_appeared, player=arguments.player)
     manager.connect("name-appeared", fn)
     manager.connect("player-vanished", on_player_vanished)
 

@@ -16,8 +16,9 @@ from pathlib import Path
 import gi
 import requests
 from functools import partial
-from gi.repository import GLib, Playerctl
+
 gi.require_version("Playerctl", "2.0")
+from gi.repository import GLib, Playerctl
 
 # Internal global variables
 config = None
@@ -166,7 +167,7 @@ def download_art(art_url):
         fh.write(resp.content)
         logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
     # Update album art on bar
-    cmd = ["pkill", "-RTMIN+2", "waybar"]
+    cmd = ["pkill", "-RTMIN+"+str(config["image_signal"]), "waybar"]
     subprocess.run(cmd)
 
 
@@ -370,8 +371,8 @@ def main():
     manager = Playerctl.PlayerManager()
     loop = GLib.MainLoop()
 
-    fn = partial(on_player_appeared, player=arguments.player)
-    manager.connect("name-appeared", fn)
+    # manager.connect("player-appeared", on_player_appeared)
+    manager.connect("name-appeared", on_player_appeared)
     manager.connect("player-vanished", on_player_vanished)
 
     # signal.signal(signal.SIGINT, signal_handler)

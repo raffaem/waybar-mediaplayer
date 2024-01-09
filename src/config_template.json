@@ -4,9 +4,10 @@
 	"notification_min_interval": 2,
 	"widget_length": 20,
 	"sepchar": "",
-	"surface_color": "black",
-	"overlay_color": "grey",
+	"surface_color": "#363a4f",
+	"overlay_color": "#6e738d",
 	"interval": 0.1,
 	"text_rot_int": 1000,
+	"image_signal": 4,
 	"length_factor": 1
 }

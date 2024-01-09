@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
 import numpy as np
-import os
 from pathlib import Path
 import sys
 import json
 import math
+from functools import partial
 
 # Read config file
 fp = Path(sys.argv[0]).parent.resolve() / "config.json"
 if not fp.is_file():
-    logging.critical(f"ERROR: Configuration file {fp} not found")
+    print(f"ERROR: Configuration file {fp} not found")
     sys.exit(1)
 with open(fp, "r") as fh:
     global config
     config = json.load(fh)
-assert(type(config)==dict)
+assert(isinstance(config, dict))
 
 overlay_color = config["overlay_color"]
 surface_color = config["surface_color"]
@@ -23,11 +23,15 @@ interval = config["interval"]
 digits = math.floor(math.log10(interval))
 digits = max(0, math.fabs(digits))
 digits = int(digits)
-print(f"Decimal points: "+str(digits))
+print(f"Decimal points: {digits}")
+
+
+def myround(x,y):
+    return str(round(x,y))
 
 # Internals
-format_pc = lambda x: str(round(x, digits+1))
-format_class = lambda x: str(round(x, digits))
+format_pc = partial(myround, y=digits+1)
+format_class = partial(myround, y=digits)
 outfp = Path(sys.argv[0]).parent.resolve() / "mediaplayer-progressbar.css"
 print(f"Writing output to {outfp}")
 

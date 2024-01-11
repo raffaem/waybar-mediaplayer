@@ -18,12 +18,12 @@ import requests
 from functools import partial
 
 gi.require_version("Playerctl", "2.0")
-from gi.repository import GLib, Playerctl
+from gi.repository import GLib, Playerctl # noqa: E402
 
 # Internal global variables
 config = None
 logger = logging.getLogger(__name__)
-artfp = "/tmp/waybar-mediaplayer-art"
+artfp = Path("/tmp/waybar-mediaplayer-art")
 last_metadata = None
 last_art_url = None
 last_rot = 0
@@ -48,10 +48,18 @@ def on_player_appeared(manager, player, selected_player=None):
     logger.debug("Returning True")
     return True
 
+def delete_album_art():
+    if artfp.is_file():
+        try:
+            artfp.unlink()
+        except Exception:
+            pass
+    signal_album_art_change()
 
 def on_player_vanished(manager, player):
     logger.info("I was called")
     write_output()
+    delete_album_art()
     logger.info("Returning True")
     return True
 
@@ -160,6 +168,10 @@ def gen_widget_text(player):
     return text
 
 
+def signal_album_art_change():
+    cmd = ["pkill", "-RTMIN+"+str(config["image_signal"]), "waybar"]
+    subprocess.run(cmd)
+
 def download_art(art_url):
     logger.debug("Updating album art")
     resp = requests.get(art_url)
@@ -167,8 +179,7 @@ def download_art(art_url):
         fh.write(resp.content)
         logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
     # Update album art on bar
-    cmd = ["pkill", "-RTMIN+"+str(config["image_signal"]), "waybar"]
-    subprocess.run(cmd)
+    signal_album_art_change()
 
 
 def send_notification(summary, body):
@@ -359,6 +370,9 @@ def main():
         global config
         config = json.load(fh)
     assert isinstance(config,dict)
+
+    # Remove album art if present
+    delete_album_art()
 
     # Function to generate CSS classes
     global format_class

@@ -54,14 +54,14 @@ Put the following in `$HOME/.config/waybar/config`, substituting `ncspot` with t
 },
 
 "custom/mediaplayer": {
-  "exec": "$HOME/.config/waybar/mediaplayer/mediaplayer --player ncspot",
-  "return-type": "json",
-  "format": "{}",
-  "on-click": "playerctl --player=ncspot play-pause",
-  "on-scroll-up": "playerctl --player=ncspot next",
-  "on-scroll-down": "playerctl --player=ncspot previous",
-  "min-length": 20,
-  "max-length": 20
+    "exec": "$HOME/.config/waybar/mediaplayer/mediaplayer monitor",
+    "return-type": "json",
+    "format": "{}",
+    "on-click": "$HOME/.config/waybar/mediaplayer/mediaplayer play-pause",
+    "on-scroll-up": "$HOME/.config/waybar/mediaplayer/mediaplayer next",
+    "on-scroll-down": "$HOME/.config/waybar/mediaplayer/mediaplayer previous",
+    "min-length": 20,
+    "max-length": 20
 },
 ```
 

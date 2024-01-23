@@ -355,6 +355,7 @@ def signal_handler(sig, frame):
 def parse_arguments():
     parser = argparse.ArgumentParser()
     # Increase verbosity with every occurrence of -v
+    parser.add_argument("command", action="store", default="error")
     parser.add_argument("-v", "--verbose", action="count", default=0)
     return parser.parse_args()
 
@@ -403,15 +404,6 @@ def main():
     format_class = partial(lambda x, y: str(round(x, y)), y=digits)
 
     manager = Playerctl.PlayerManager()
-    loop = GLib.MainLoop()
-
-    # manager.connect("player-appeared", on_player_appeared)
-    manager.connect("name-appeared", on_player_appeared)
-    manager.connect("player-vanished", on_player_vanished)
-
-    # signal.signal(signal.SIGINT, signal_handler)
-    # signal.signal(signal.SIGTERM, signal_handler)
-    # signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     ini = False
     for player in manager.props.player_names:
@@ -422,13 +414,36 @@ def main():
         ):
             logger.debug("This is not the filtered player, skipping it")
             continue
-        logger.debug("Initializing player")
-        init_player(manager, player)
-        ini = True
+        if arguments.command == "play-pause":
+            Playerctl.Player.new(player.name).play_pause()
+            sys.exit(0)
+        elif arguments.command == "next":
+            Playerctl.Player.new(player.name).next()
+            sys.exit(0)
+        elif arguments.command == "previous":
+            Playerctl.Player.new(player.name).previous()
+            sys.exit(0)
+        elif arguments.command == "monitor":
+            logger.debug("Initializing player")
+            init_player(manager, player)
+            ini = True
+        else:
+            logger.critical(f"Invalid argument {sys.argv[1]}")
+            sys.exit(1)
 
     if not ini:
         logger.debug("No player found. Printing empty")
         write_output()
+
+    loop = GLib.MainLoop()
+
+    # manager.connect("player-appeared", on_player_appeared)
+    manager.connect("name-appeared", on_player_appeared)
+    manager.connect("player-vanished", on_player_vanished)
+
+    # signal.signal(signal.SIGINT, signal_handler)
+    # signal.signal(signal.SIGTERM, signal_handler)
+    # signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     loop.run()
 

@@ -54,12 +54,12 @@ Put the following in `$HOME/.config/waybar/config`, substituting `ncspot` with t
 },
 
 "custom/mediaplayer": {
-    "exec": "$HOME/.config/waybar/mediaplayer/mediaplayer monitor",
+    "exec": "$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer monitor",
     "return-type": "json",
     "format": "{}",
-    "on-click": "$HOME/.config/waybar/mediaplayer/mediaplayer play-pause",
-    "on-scroll-up": "$HOME/.config/waybar/mediaplayer/mediaplayer next",
-    "on-scroll-down": "$HOME/.config/waybar/mediaplayer/mediaplayer previous",
+    "on-click": "$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer play-pause",
+    "on-scroll-up": "$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer next",
+    "on-scroll-down": "$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer previous",
     "min-length": 20,
     "max-length": 20
 },
@@ -73,7 +73,7 @@ Put the following in `$HOME/.config/waybar/style.css`:
   font-size: 16px;
   border-radius: 2%;
 }
-@import "./mediaplayer/mediaplayer-progressbar.css";
+@import "./waybar-mediaplayer/src/mediaplayer-progressbar.css";
 ```
 
 To disable notifications, put `is_notification=false` in `config.json`.

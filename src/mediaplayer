@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 import gi
 import requests
+import shutil
 from functools import partial
 
 gi.require_version("Playerctl", "2.0")
@@ -53,11 +54,13 @@ def on_player_appeared(manager, player, selected_player=None):
 
 
 def delete_album_art():
-    if artfp.is_file():
-        try:
-            artfp.unlink()
-        except Exception:
-            pass
+    p = Path(__file__)
+    shutil.copy(p.parents[1]/"assets"/"music_white.png", artfp)
+    # if artfp.is_file():
+    #     try:
+    #         artfp.unlink()
+    #     except Exception:
+    #         pass
     signal_album_art_change()
 
 

@@ -18,7 +18,7 @@ import requests
 from functools import partial
 
 gi.require_version("Playerctl", "2.0")
-from gi.repository import GLib, Playerctl # noqa: E402
+from gi.repository import GLib, Playerctl  # noqa: E402
 
 # Internal global variables
 config = None
@@ -43,10 +43,13 @@ def on_player_appeared(manager, player, selected_player=None):
     ):
         init_player(manager, player)
     else:
-        logger.debug("New player appeared, but it's not the selected player, skipping")
+        logger.debug(
+            "New player appeared, but it's not the selected player, skipping"
+        )
 
     logger.debug("Returning True")
     return True
+
 
 def delete_album_art():
     if artfp.is_file():
@@ -55,6 +58,7 @@ def delete_album_art():
         except Exception:
             pass
     signal_album_art_change()
+
 
 def on_player_vanished(manager, player):
     logger.info("I was called")
@@ -110,7 +114,11 @@ def write_output(text=None, class_=None, tooltip=""):
         text = "" + (" " * (config["widget_length"] - 1))
     if not class_:
         class_ = gen_class(0.0)
-    output = {"text": text, "class": class_, "tooltip": "<span>" + tooltip + "</span>"}
+    output = {
+        "text": text,
+        "class": class_,
+        "tooltip": "<span>" + tooltip + "</span>",
+    }
     sys.stdout.write(json.dumps(output) + "\n")
     sys.stdout.flush()
 
@@ -121,7 +129,9 @@ def register_refresh_interval_callback(player, manager):
     is_playing = player.props.status == "Playing"
     if is_playing and (not is_refint):
         logger.debug("Registering `refresh_interval` callback")
-        GLib.timeout_add(config["refresh_interval"], on_refresh_interval, manager)
+        GLib.timeout_add(
+            config["refresh_interval"], on_refresh_interval, manager
+        )
         is_refint = True
 
 
@@ -169,8 +179,9 @@ def gen_widget_text(player):
 
 
 def signal_album_art_change():
-    cmd = ["pkill", "-RTMIN+"+str(config["image_signal"]), "waybar"]
+    cmd = ["pkill", "-RTMIN+" + str(config["image_signal"]), "waybar"]
     subprocess.run(cmd)
+
 
 def download_art(art_url):
     logger.debug("Updating album art")
@@ -191,7 +202,7 @@ def send_notification(summary, body):
         summary,
         body,
     ]
-    logger.debug(f"Running {cmd}")
+    logger.error(f"Running {cmd}")
     subprocess.run(cmd)
     last_notification_time = time.time()
 
@@ -212,7 +223,9 @@ def update_metadata(player, metadata, manager):
         last_art_url = art_url
     # Notification
     notexp = time.time() - last_notification_time
-    if config["is_notification"] and notexp >= config["notification_min_interval"]:
+    if config["is_notification"] and (
+        notexp >= config["notification_min_interval"]
+    ):
         send_notification(player.get_title(), player.get_artist())
     # Does text need rotation?
     is_text_rotating = (
@@ -268,7 +281,7 @@ def update_progressbar(manager, player):
         length = 9999
         # return False
     # Compute song percentage
-    perc = (pos / (length/config["length_factor"])) * 100
+    perc = (pos / (length / config["length_factor"])) * 100
     perc = min(perc, 100.0)
     metadata = {
         "title": player.get_title(),
@@ -294,7 +307,9 @@ def update_progressbar(manager, player):
         and metadata["length"] == last_metadata["length"]
     )
     if same_song and not pbar_needs_update and not rot_needs_update:
-        logger.debug("Song is the same and neither the text nor the progressbar needs an update. Returning")
+        logger.debug(
+            "Song is the same and neither the text nor the progressbar needs an update. Returning"
+        )
         return False
     # Write output
     widget_text = gen_widget_text(player)
@@ -371,7 +386,11 @@ def main():
     with open(fp, "r") as fh:
         global config
         config = json.load(fh)
-    assert isinstance(config,dict)
+    config_str = json.dumps(
+        config, indent=4, sort_keys=True, ensure_ascii=False
+    )
+    logger.debug(f"config={config}")
+    assert isinstance(config, dict)
 
     # Remove album art if present
     delete_album_art()
@@ -382,7 +401,7 @@ def main():
     digits = math.floor(math.log10(interval))
     digits = max(0, math.fabs(digits))
     digits = int(digits)
-    format_class = partial(lambda x,y: str(round(x, y)), y=digits)
+    format_class = partial(lambda x, y: str(round(x, y)), y=digits)
 
     manager = Playerctl.PlayerManager()
     loop = GLib.MainLoop()
@@ -398,7 +417,10 @@ def main():
     ini = False
     for player in manager.props.player_names:
         logger.debug(f"Found player '{player.name}'")
-        if config["player_name"] is not None and config["player_name"] != player.name:
+        if (
+            config["player_name"] is not None
+            and config["player_name"] != player.name
+        ):
             logger.debug("This is not the filtered player, skipping it")
             continue
         logger.debug("Initializing player")

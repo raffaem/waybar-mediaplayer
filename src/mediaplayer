@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Copyright 2023 Raffaele Mancuso
 # SPDX-License-Identifier: MIT
-# Inspired by: https://github.com/Alexays/Waybar/blob/master/resources/custom_modules/mediaplayer.py
+# Inspired by: https://github.com/Alexays/Waybar/blob/
+#              master/resources/custom_modules/mediaplayer.py
 # This requires `playerctl`: `sudo pacman -S playerctl`
 # Call it like `mediaplayerctl --player player_name`
 # Find player_name with `playerctl --list-all`
@@ -308,7 +309,8 @@ def update_progressbar(manager, player):
     )
     if same_song and not pbar_needs_update and not rot_needs_update:
         logger.debug(
-            "Song is the same and neither the text nor the progressbar needs an update. Returning"
+            "Song is the same and neither the text "
+            "nor the progressbar needs an update. Returning"
         )
         return False
     # Write output
@@ -386,9 +388,6 @@ def main():
     with open(fp, "r") as fh:
         global config
         config = json.load(fh)
-    config_str = json.dumps(
-        config, indent=4, sort_keys=True, ensure_ascii=False
-    )
     logger.debug(f"config={config}")
     assert isinstance(config, dict)
 

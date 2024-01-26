@@ -293,12 +293,24 @@ def update_progressbar(manager, player):
         logger.debug(f"pos from CLI={pos}")
     pmetadata = player.props.metadata
     logger.debug(f"pmetadata={pmetadata}")
-    length = int(pmetadata["mpris:length"])
-    logger.debug(f"length={length}")
-    if length == 0:
-        logger.debug("Length of song is 0. Faking a very long length.")
-        length = 9999
-        # return False
+    try:
+        length = pmetadata["mpris:length"]
+    except KeyError:
+        logger.debug(
+            "ERROR: The payer is not reporting the length of the song to us"
+            "Progress bar won't work."
+        )
+        length = 100
+        pos = 0
+    else:
+        logger.debug(f"length={length}")
+        if length == 0:
+            logger.debug(
+                "ERROR: Length of song is 0. Progress bar won't work."
+            )
+            length = 100
+            pos = 0
+            # return False
     # Compute song percentage
     perc = (pos / (length / config["length_factor"])) * 100
     perc = min(perc, 100.0)

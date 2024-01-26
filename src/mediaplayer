@@ -201,9 +201,10 @@ def download_art(art_url):
         shutil.copy(art_url, artfp)
         logger.debug(f"Album art '{art_url}' symlinked to '{artfp}'")
     else:
-        raise Exception(
-            f"Unknown protocol for {art_url}. Please report this as a bug."
+        logger.debug(
+            f"Invalid schema for {art_url}. Please report this as a bug."
         )
+        return
     # Convert image to JPEG
     if config["convert_to_jpeg"]:
         artfp2 = artfp.parent / (artfp.stem + ".jpeg")

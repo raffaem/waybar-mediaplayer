@@ -38,11 +38,9 @@ icons = {"play": " ", "stop": " "}
 is_text_rotating = None
 
 
-def on_player_appeared(manager, player, selected_player=None):
+def on_player_appeared(manager, player, requested_player):
     logger.debug("I was called")
-    if player is not None and (
-        selected_player is None or player.name == selected_player
-    ):
+    if player and (player.name == requested_player):
         init_player(manager, player)
     else:
         logger.debug(
@@ -459,8 +457,11 @@ def main():
 
     loop = GLib.MainLoop()
 
+    on_player_appeared_inst = partial(
+        on_player_appeared, requested_player=requested_player
+    )
     # manager.connect("player-appeared", on_player_appeared)
-    manager.connect("name-appeared", on_player_appeared)
+    manager.connect("name-appeared", on_player_appeared_inst)
     manager.connect("player-vanished", on_player_vanished)
 
     # signal.signal(signal.SIGINT, signal_handler)

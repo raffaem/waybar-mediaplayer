@@ -105,6 +105,7 @@ If you change the colors of the bar in `$HOME/.config/waybar/waybar-mediaplayer/
 
 ## Firefox users
 
-Altough Firefox reports MPRIS metadata, the metadata it reports is not sufficient, as it doesn't report song's length. Please install the [Plasma Integration](https://addons.mozilla.org/en-US/firefox/addon/plasma-integration) add-on and use `plasma-browser-integration` as `player_name`.
+Although Firefox reports MPRIS metadata, the metadata it reports is not sufficient, as it doesn't report song's length. Please install the [Plasma Integration](https://addons.mozilla.org/en-US/firefox/addon/plasma-integration) add-on and use `plasma-browser-integration` as `player_name` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`.
 
-To have album art, make sure to set `convert_to_jpeg` to `true` in `config.json`.
+To have album art, make sure to set `convert_to_jpeg` to `true` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json` (this option decreases performance, don't use it if not necessary).
+

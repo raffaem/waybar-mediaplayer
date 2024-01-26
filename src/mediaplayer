@@ -197,6 +197,9 @@ def download_art(art_url):
         # artfp.symlink_to(art_url)
         shutil.copy(art_url, artfp)
         logger.debug(f"Album art '{art_url}' symlinked to '{artfp}'")
+    elif Path(art_url).is_file():
+        shutil.copy(art_url, artfp)
+        logger.debug(f"Album art '{art_url}' symlinked to '{artfp}'")
     else:
         raise Exception(
             f"Unknown protocol for {art_url}. Please report this as a bug."

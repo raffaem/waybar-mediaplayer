@@ -298,7 +298,7 @@ def update_progressbar(manager, player):
     pmetadata = player.props.metadata
     logger.debug(f"pmetadata={pmetadata}")
     try:
-        length = pmetadata["mpris:length"]
+        length = int(pmetadata["mpris:length"])
     except KeyError:
         logger.debug(
             "ERROR: The player is not reporting the length of the song to us. "
@@ -314,7 +314,6 @@ def update_progressbar(manager, player):
             )
             length = 100
             pos = 0
-            # return False
     # Compute song percentage
     perc = (pos / (length / config["length_factor"])) * 100
     perc = min(perc, 100.0)

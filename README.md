@@ -109,3 +109,8 @@ Although Firefox reports MPRIS metadata, the metadata it reports is not sufficie
 
 To have album art, make sure to set `convert_to_jpeg` to `true` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json` (this option decreases performance, don't use it if not necessary).
 
+## Me progress bar doesn't work
+
+It's likely cause by the player not reporting song length or position back to us. Run `$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer -vvv` to debug.
+
+

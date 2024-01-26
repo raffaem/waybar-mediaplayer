@@ -419,6 +419,11 @@ def main():
 
     manager = Playerctl.PlayerManager()
 
+    config["player_name"] = config["player_name"].split(".")[0]
+    logger.debug(
+        f"Splitting player_name on `.`. player_name={config['player_name']}"
+    )
+
     ini = False
     for player in manager.props.player_names:
         logger.debug(f"Found player '{player.name}'")

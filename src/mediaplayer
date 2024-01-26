@@ -250,8 +250,9 @@ def update_metadata(player, metadata, manager):
     ):
         send_notification(player.get_title(), player.get_artist())
     # Does text need rotation?
+    title = player.get_title() or ""
     is_text_rotating = (
-        len(player.get_title()) + len(icons["stop"]) > config["widget_length"]
+        len(title) + len(icons["stop"]) + 1 > config["widget_length"]
     )
     logger.debug("Returning")
 

@@ -37,7 +37,11 @@ Run:
 git clone https://github.com/raffaem/waybar-mediaplayer "$HOME/.config/waybar/waybar-mediaplayer"
 ```
 
-Open `"$HOME/.config/waybar/waybar-mediaplayer/src/config.json` and change `player_name` with the name of the player you want to control. To find the name of your player, run `playerctl --list-all` while your player is running.
+You need to find the name of your player. To do so, run `playerctl --list-all` while your player is running.
+
+If the player reports an instance after its name, please provide only the player name without the instance number. For example, [kew](https://github.com/ravachol/kew) may report itself as `kew123456`, where `123456` is an instance number which will change with different runs of `kew`. In this case, we report only `kew` without the instance number. This software will check whether the reported player name _starts_ with the name you provide to bind the correct player.
+
+Open `"$HOME/.config/waybar/waybar-mediaplayer/src/config.json` and change `player_name` with the name of your player.
 
 Put the following in `$HOME/.config/waybar/config`:
 

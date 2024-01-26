@@ -429,7 +429,7 @@ def main():
         logger.debug(f"Found player '{player.name}'")
         if (
             config["player_name"] is not None
-            and config["player_name"] != player.name
+            and not player.name.startswith(config["player_name"])
         ):
             logger.debug("This is not the filtered player, skipping it")
             continue

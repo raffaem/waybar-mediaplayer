@@ -4,18 +4,19 @@
 # Inspired by: https://github.com/Alexays/Waybar/blob/
 #              master/resources/custom_modules/mediaplayer.py
 import argparse
-import urllib
 import json
 import logging
 import math
+import shutil
 import subprocess
 import sys
 import time
+import urllib
+from functools import partial
 from pathlib import Path
+
 import gi
 import requests
-import shutil
-from functools import partial
 from PIL import Image
 
 gi.require_version("Playerctl", "2.0")

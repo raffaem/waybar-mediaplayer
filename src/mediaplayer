@@ -204,7 +204,7 @@ def download_art(art_url):
         )
     # Convert image to JPEG
     if config["convert_to_jpeg"]:
-        artfp2 = artfp.parent / (artfp.stem+".jpeg")
+        artfp2 = artfp.parent / (artfp.stem + ".jpeg")
         with Image.open(artfp) as im:
             im.save(artfp2)
         shutil.move(artfp2, artfp)
@@ -432,9 +432,8 @@ def main():
     ini = False
     for player in manager.props.player_names:
         logger.debug(f"Found player '{player.name}'")
-        if (
-            config["player_name"] is not None
-            and not player.name.startswith(config["player_name"])
+        if config["player_name"] is not None and not player.name.startswith(
+            config["player_name"]
         ):
             logger.debug("This is not the filtered player, skipping it")
             continue

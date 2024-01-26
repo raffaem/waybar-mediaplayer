@@ -300,9 +300,9 @@ def update_progressbar(manager, player):
     perc = (pos / (length / config["length_factor"])) * 100
     perc = min(perc, 100.0)
     metadata = {
-        "title": player.get_title(),
-        "artist": player.get_artist(),
-        "album": player.get_album(),
+        "title": player.get_title() or "",
+        "artist": player.get_artist() or "",
+        "album": player.get_album() or "",
         "pos": pos,
         "length": length,
         "perc": perc,

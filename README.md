@@ -114,3 +114,12 @@ It's likely cause by the player not reporting song length or position back to us
 ## Player reports its name with instance number
 
 If the player reports an instance after its name, please provide only the player name without the instance number. For example, [kew](https://github.com/ravachol/kew) may report itself as `kew123456`, where `123456` is an instance number which will change with different runs of `kew`. In this case, we report only `kew` without the instance number. This software will check whether the reported player name _starts_ with the name you provide to bind the correct player.
+
+## Me title and tooltip are empty
+
+It's likely your song file doesn't contain metadata.
+
+Run `exiftool SONG.mp3` and check the `Title`, `Album` and `Artist` fields.
+
+
+

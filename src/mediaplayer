@@ -325,14 +325,13 @@ def update_progressbar(manager, player):
         "length": length,
         "perc": perc,
     }
-    if metadata == last_metadata:
-        logger.debug("Metadata is the same as the last time. Returning.")
-        return False
-    # Check if percentage has not changed enough since last time
+    # Check if a rotating text needs to be updated
     elapsed = (time.time() - last_rot_time) * 1000
     rot_needs_update = elapsed > config["text_rot_int"]
+    # Check if progress bar needs to be updated
     diff = metadata["perc"] - last_metadata["perc"] if last_metadata else 99999
     pbar_needs_update = diff > config["interval"]
+    # Check if song is the same (otherwise text needs to be updated)
     same_song = (
         last_metadata
         and metadata["title"] == last_metadata["title"]

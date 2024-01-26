@@ -80,6 +80,13 @@ Restart waybar.
 
 The mediaplayer should work. Click on the progress bar to start/stop playing, and scroll on it to change song.
 
+# Update
+
+```
+cd "$HOME/.config/waybar/waybar-mediaplayer"
+git pull
+```
+
 # Personalization
 
 To disable notifications, put `is_notification=false` in `config.json`.

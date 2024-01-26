@@ -142,7 +142,7 @@ def gen_widget_text(player):
     metadata = player.props.metadata
     # artist = player.get_artist()
     # artist = metadata["xesam:artist"][0]
-    title = player.get_title()
+    title = player.get_title() or ""
     # title = metadata["xesam:title"]
 
     icon = icons["play"] if player.props.status != "Playing" else icons["stop"]

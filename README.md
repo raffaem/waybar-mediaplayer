@@ -51,7 +51,7 @@ Put the following in `$HOME/.config/waybar/config`:
 "image": {
   "path": "/tmp/waybar-mediaplayer-art",
   "size": 32,
-  "signal": 2,
+  "signal": 4,
   "on-click": "feh --auto-zoom --borderless --title 'feh-float' /tmp/waybar-mediaplayer-art"
 },
 
@@ -121,5 +121,8 @@ It's likely your song file doesn't contain metadata.
 
 Run `exiftool SONG.mp3` and check the `Title`, `Album` and `Artist` fields.
 
+## Me album art doesn't change on song change
+
+Make sure that the `signal` in the `image` module in `$HOME/.config/waybar/config` matches the number provided by `image_signal` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`.
 
 

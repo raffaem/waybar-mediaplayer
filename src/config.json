@@ -10,5 +10,6 @@
 	"text_rot_int": 1000,
 	"image_signal": 4,
 	"length_factor": 1,
-	"player_name": "spotify"
+	"player_name": "spotify",
+        "convert_to_jpeg": false
 }

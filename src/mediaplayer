@@ -3,9 +3,6 @@
 # SPDX-License-Identifier: MIT
 # Inspired by: https://github.com/Alexays/Waybar/blob/
 #              master/resources/custom_modules/mediaplayer.py
-# This requires `playerctl`: `sudo pacman -S playerctl`
-# Call it like `mediaplayerctl --player player_name`
-# Find player_name with `playerctl --list-all`
 import argparse
 import urllib
 import json
@@ -19,6 +16,7 @@ import gi
 import requests
 import shutil
 from functools import partial
+from PIL import Image
 
 gi.require_version("Playerctl", "2.0")
 from gi.repository import GLib, Playerctl  # noqa: E402
@@ -204,6 +202,12 @@ def download_art(art_url):
         raise Exception(
             f"Unknown protocol for {art_url}. Please report this as a bug."
         )
+    # Convert image to JPEG
+    if config["convert_to_jpeg"]:
+        artfp2 = artfp.parent / (artfp.stem+".jpeg")
+        with Image.open(artfp) as im:
+            im.save(artfp2)
+        shutil.move(artfp2, artfp)
     # Update album art on bar
     signal_album_art_change()
 

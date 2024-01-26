@@ -289,6 +289,7 @@ def update_progressbar(manager, player):
         pos = float(pos) * (10**6)
         logger.debug(f"pos from CLI={pos}")
     pmetadata = player.props.metadata
+    logger.debug(f"pmetadata={pmetadata}")
     length = int(pmetadata["mpris:length"])
     logger.debug(f"length={length}")
     if length == 0:

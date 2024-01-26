@@ -300,7 +300,7 @@ def update_progressbar(manager, player):
         length = pmetadata["mpris:length"]
     except KeyError:
         logger.debug(
-            "ERROR: The payer is not reporting the length of the song to us"
+            "ERROR: The player is not reporting the length of the song to us. "
             "Progress bar won't work."
         )
         length = 100

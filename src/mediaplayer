@@ -177,7 +177,8 @@ def gen_widget_text(player):
 
 def signal_album_art_change():
     cmd = ["pkill", "-RTMIN+" + str(config["image_signal"]), "waybar"]
-    subprocess.run(cmd)
+    res = subprocess.run(cmd)
+    logger.debug(f"pkill returned: {res}")
 
 
 def download_art(art_url):
@@ -196,10 +197,10 @@ def download_art(art_url):
         # apparently symlinks are not followed
         # artfp.symlink_to(art_url)
         shutil.copy(art_url, artfp)
-        logger.debug(f"Album art '{art_url}' symlinked to '{artfp}'")
+        logger.debug(f"Album art '{art_url}' copied to '{artfp}'")
     elif Path(art_url).is_file():
         shutil.copy(art_url, artfp)
-        logger.debug(f"Album art '{art_url}' symlinked to '{artfp}'")
+        logger.debug(f"Album art '{art_url}' copied to '{artfp}'")
     else:
         logger.debug(
             f"Invalid schema for {art_url}. Please report this as a bug."

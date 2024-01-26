@@ -100,3 +100,9 @@ To change widget's length, set `min-length` and `max-length` in `$HOME/.config/w
 In order for the album art to automatically update on song change, it's important that the `signal` variable of the `image` module in `$HOME/.config/waybar/config` matches the `image_signal` variable in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`.
 
 If you change the colors of the bar in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`, make sure to apply the changes by running `$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer-progressbar-gencss` and restart waybar.
+
+# Troubleshooting
+
+## Firefox users
+
+Altough Firefox reports MPRIS metadata, the metadata it reports is not sufficient, as it doesn't report song's length. Please install the [Plasma Integration](https://addons.mozilla.org/en-US/firefox/addon/plasma-integration) add-on and use `plasma-browser-integration` as `player_name`.

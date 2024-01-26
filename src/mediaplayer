@@ -7,6 +7,7 @@
 # Call it like `mediaplayerctl --player player_name`
 # Find player_name with `playerctl --list-all`
 import argparse
+import urllib
 import json
 import logging
 import math
@@ -55,12 +56,7 @@ def on_player_appeared(manager, player, selected_player=None):
 
 def delete_album_art():
     p = Path(__file__)
-    shutil.copy(p.parents[1]/"assets"/"music_white.png", artfp)
-    # if artfp.is_file():
-    #     try:
-    #         artfp.unlink()
-    #     except Exception:
-    #         pass
+    shutil.copy(p.parents[1] / "assets" / "music_white.png", artfp)
     signal_album_art_change()
 
 
@@ -189,10 +185,25 @@ def signal_album_art_change():
 
 def download_art(art_url):
     logger.debug("Updating album art")
-    resp = requests.get(art_url)
-    with open(artfp, "wb") as fh:
-        fh.write(resp.content)
-        logger.debug(f"Album art '{art_url}' saved into '{artfp}'")
+    if art_url.startswith("http"):
+        resp = requests.get(art_url)
+        with open(artfp, "wb") as fh:
+            fh.write(resp.content)
+        logger.debug(
+            f"Album art '{art_url}' downloaded and saved into '{artfp}'"
+        )
+    elif art_url.startswith("file://"):
+        art_url = art_url[7:]
+        art_url = urllib.parse.unquote(art_url)
+        # symlinking the file doesn't work
+        # apparently symlinks are not followed
+        # artfp.symlink_to(art_url)
+        shutil.copy(art_url, artfp)
+        logger.debug(f"Album art '{art_url}' symlinked to '{artfp}'")
+    else:
+        raise Exception(
+            f"Unknown protocol for {art_url}. Please report this as a bug."
+        )
     # Update album art on bar
     signal_album_art_change()
 

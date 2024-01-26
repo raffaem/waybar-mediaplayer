@@ -289,7 +289,7 @@ def update_progressbar(manager, player):
         pos = float(pos) * (10**6)
         logger.debug(f"pos from CLI={pos}")
     pmetadata = player.props.metadata
-    length = pmetadata["mpris:length"]
+    length = int(pmetadata["mpris:length"])
     logger.debug(f"length={length}")
     if length == 0:
         logger.debug("Length of song is 0. Faking a very long length.")

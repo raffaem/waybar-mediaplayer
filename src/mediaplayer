@@ -298,6 +298,8 @@ def update_progressbar(manager, player):
     pmetadata = player.props.metadata
     logger.debug(f"pmetadata={pmetadata}")
     try:
+        # cast to int is important as some softwares,
+        # like Amberol, are reporting a string
         length = int(pmetadata["mpris:length"])
     except KeyError:
         logger.debug(

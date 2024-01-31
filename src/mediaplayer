@@ -156,6 +156,9 @@ def gen_widget_text(player):
     else:
         song_info = title.strip()
 
+    # HTML entities need to be escaped
+    song_info = song_info.replace("&", "&amp;")
+
     if not is_text_rotating:
         text = left_text(icon + song_info)
     else:

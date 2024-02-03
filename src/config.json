@@ -15,5 +15,7 @@
   "album_art_placeholder": "no",
   "lyrics_providers": [
     "Lrclib"
-  ]
+  ],
+  "lyrics_span_before": 3,
+  "lyrics_span_after": 3
 }

@@ -430,8 +430,13 @@ def update_progressbar(manager, player):
         # print(f"lyr_pos={lyr_pos}; lyrics_ix={lyrics_ix}")
 
         lyrics["last_ix"] = lyrics_ix
-        span_before = 2
-        span_after = 2
+        span_before = config["lyrics_span_before"]
+        span_after = config["lyrics_span_after"]
+        # Make sure we always have the same number of lines
+        # also at start and end of the song
+        span_before += max(lyrics_ix + span_after - len(lyrics["text"]) + 1, 0)
+        span_after += max(span_before - lyrics_ix, 0)
+        # Loop over lyrics window
         to_put = np.arange(
             max(lyrics_ix - span_before, 0),
             min(lyrics_ix + span_after, len(lyrics["text"]) - 1) + 1,

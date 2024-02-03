@@ -11,5 +11,6 @@
 	"image_signal": 4,
 	"length_factor": 1,
 	"player_name": "spotify",
-        "convert_to_jpeg": false
+        "convert_to_jpeg": false,
+        "tray_dark": true
 }

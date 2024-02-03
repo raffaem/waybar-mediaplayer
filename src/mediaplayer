@@ -53,7 +53,11 @@ def on_player_appeared(manager, player, requested_player):
 
 def delete_album_art():
     p = Path(__file__)
-    shutil.copy(p.parents[1] / "assets" / "music_white.png", artfp)
+    if config["tray_dark"]:
+        trayfp = p.parents[1] / "assets" / "music_black.png"
+    else:
+        trayfp = p.parents[1] / "assets" / "music_white.png"
+    shutil.copy(trayfp, artfp)
     signal_album_art_change()
 
 

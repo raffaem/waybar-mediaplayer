@@ -125,14 +125,17 @@ def on_refresh_interval(manager):
 
 def write_output(text=None, class_=None, tooltip=""):
     global config
-    # HTML entities need to be escaped
-    text = text.replace("&", "&amp;")
-    tooltip = tooltip.replace("&", "&amp;")
-    # Icons
+    # Default values if not explicitly set
     if not text:
         text = "" + (" " * (config["widget_length"] - 1))
     if not class_:
         class_ = gen_class(0.0)
+    if not tooltip:
+        tooltip = ""
+    # HTML entities need to be escaped
+    text = text.replace("&", "&amp;")
+    tooltip = tooltip.replace("&", "&amp;")
+    # Write to stdout
     output = {
         "text": text,
         "class": class_,

@@ -4,9 +4,9 @@
   "notification_min_interval": 2,
   "widget_length": 20,
   "sepchar": "",
-  "surface_color": "rgba(54, 58, 79, 0.5)",
-  "overlay_color": "rgba(110, 115, 141, 0.6)",
-  "interval": 0.1,
+  "surface_color": "@surface0",
+  "overlay_color": "@overlay0",
+  "interval": 1,
   "text_rot_int": 1000,
   "image_signal": 4,
   "length_factor": 1,
@@ -14,7 +14,10 @@
   "convert_to_jpeg": false,
   "album_art_placeholder": "no",
   "lyrics_providers": [
-    "Lrclib"
+    "Lrclib",
+    "Musixmatch",
+    "NetEase",
+    "Megalobiz"
   ],
   "lyrics_span_before": 2,
   "lyrics_span_after": 2

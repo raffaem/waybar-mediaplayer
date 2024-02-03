@@ -2,4 +2,3 @@ Pillow
 pycairo
 PyGObject
 syncedlyrics
-numpy

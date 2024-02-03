@@ -17,7 +17,6 @@ from functools import partial
 from pathlib import Path
 
 import gi
-import numpy as np
 import requests
 import syncedlyrics
 from PIL import Image
@@ -290,7 +289,6 @@ def update_metadata(player, metadata, manager):
 def get_new_lyrics(artist, title):
     def finalize():
         global lyrics
-        lyrics["secs"] = np.array(lyrics["secs"])
         lyrics["max_len"] = max([len(x) for x in lyrics["text"]])
     global lyrics
     lyrics = {"secs": [0], "text": ["[INTRO]"], "last_ix": -1}
@@ -410,7 +408,7 @@ def update_progressbar(manager, player):
     if lyrics:
         # pos is in microseconds
         lyr_pos = float(pos / (10**6))
-        lyrics_ix = np.sum(lyr_pos >= lyrics["secs"]) - 1
+        lyrics_ix = sum(lyr_pos >= x for x in lyrics["secs"]) - 1
         lyrics_same = lyrics_ix == lyrics["last_ix"]
     else:
         lyrics_same = True
@@ -453,7 +451,7 @@ def update_progressbar(manager, player):
         span_before += max(lyrics_ix + span_after - len(lyrics["text"]) + 1, 0)
         span_after += max(span_before - lyrics_ix, 0)
         # Loop over lyrics window
-        to_put = np.arange(
+        to_put = range(
             max(lyrics_ix - span_before, 0),
             min(lyrics_ix + span_after, len(lyrics["text"]) - 1) + 1,
         )

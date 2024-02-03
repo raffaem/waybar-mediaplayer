@@ -34,7 +34,7 @@ def myround(x, y):
 
 # Internals
 format_pc = partial(myround, y=digits + 1)
-format_class = partial(myround, y=digits)
+format_class = partial(myround, y=1)
 
 
 def parse_arguments():
@@ -50,6 +50,7 @@ print(f"Writing output to {outfp}")
 outfh = open(outfp, "w", encoding="utf8")
 
 for i in np.arange(0, 100 + interval, interval):
+    i = float(i)
     class_ = "perc" + format_class(i).replace(".", "-")
     i2 = i + (interval / 10)
     outfh.write(

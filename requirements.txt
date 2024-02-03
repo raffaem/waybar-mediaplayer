@@ -1,0 +1,4 @@
+Pillow
+pycairo
+PyGObject
+syncedlyrics

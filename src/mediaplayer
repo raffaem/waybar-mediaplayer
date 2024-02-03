@@ -7,6 +7,7 @@ import argparse
 import json
 import logging
 import math
+import re
 import shutil
 import subprocess
 import sys
@@ -16,7 +17,9 @@ from functools import partial
 from pathlib import Path
 
 import gi
+import numpy as np
 import requests
+import syncedlyrics
 from PIL import Image
 
 gi.require_version("Playerctl", "2.0")
@@ -36,6 +39,7 @@ is_refint = False
 format_class = None
 icons = {"play": " ", "stop": " "}
 is_text_rotating = None
+lyrics = None
 
 
 def on_player_appeared(manager, player, requested_player):
@@ -66,7 +70,8 @@ def delete_album_art():
     if phfp:
         shutil.copy(phfp, artfp)
     else:
-        artfp.unlink()
+        if artfp.is_file():
+            artfp.unlink()
     signal_album_art_change()
 
 
@@ -120,6 +125,10 @@ def on_refresh_interval(manager):
 
 def write_output(text=None, class_=None, tooltip=""):
     global config
+    # HTML entities need to be escaped
+    text = text.replace("&", "&amp;")
+    tooltip = tooltip.replace("&", "&amp;")
+    # Icons
     if not text:
         text = "" + (" " * (config["widget_length"] - 1))
     if not class_:
@@ -168,9 +177,6 @@ def gen_widget_text(player):
         song_info = "AD PLAYING"
     else:
         song_info = title.strip()
-
-    # HTML entities need to be escaped
-    song_info = song_info.replace("&", "&amp;")
 
     if not is_text_rotating:
         text = left_text(icon + song_info)
@@ -247,7 +253,7 @@ def send_notification(summary, body):
 
 
 def update_metadata(player, metadata, manager):
-    global last_notification_time, last_art_url, is_text_rotating
+    global last_notification_time, last_art_url, is_text_rotating, lyrics
     logger.info("I was called")
     metadata = dict(metadata)
     # Update progressbar
@@ -271,6 +277,24 @@ def update_metadata(player, metadata, manager):
     is_text_rotating = (
         len(title) + len(icons["stop"]) + 1 > config["widget_length"]
     )
+    # Lyrics
+    artist = player.get_artist() or ""
+    lt = syncedlyrics.search(
+        f"{artist} {title}", allow_plain_format=False, providers=["Musixmatch"]
+    )
+    lt = lt.split("\n")
+    lyrics = {"secs": [0], "text": [""], "last_ix": -1}
+    for i, line in enumerate(lt):
+        m = re.match(r"\[(.*)\](.*)", line)
+        timing = m.group(1)
+        timing2 = timing.split(":")
+        assert len(timing2) == 2
+        secs = int(timing2[0]) * 60.0 + float(timing2[1])
+        text = m.group(2).strip()
+        lyrics["secs"].append(secs)
+        lyrics["text"].append(text)
+        # print(i, line, "->", "[" + str(secs) + "] ", text)
+    lyrics["secs"] = np.array(lyrics["secs"])
     logger.debug("Returning")
 
 
@@ -302,7 +326,7 @@ def gen_class(perc):
 # 2. By `on_metadata`
 # 3. By `on_playback_status`
 def update_progressbar(manager, player):
-    global last_metadata
+    global last_metadata, lyrics
     logger.debug("I was called")
     # Get percentage in the track
     pos = player.get_position()
@@ -318,6 +342,12 @@ def update_progressbar(manager, player):
     try:
         # cast to int is important as some softwares,
         # like Amberol, are reporting a string
+        # If the length of the track is known,
+        # it should be provided in the metadata property
+        # with the "mpris:length" key.
+        # The length must be given in microseconds,
+        # and be represented as a signed 64-bit integer
+        # see: https://specifications.freedesktop.org/mpris-spec/2.2/Track_List_Interface.html
         length = int(pmetadata["mpris:length"])
     except KeyError:
         logger.debug(
@@ -351,6 +381,14 @@ def update_progressbar(manager, player):
     # Check if progress bar needs to be updated
     diff = metadata["perc"] - last_metadata["perc"] if last_metadata else 99999
     pbar_needs_update = diff > config["interval"]
+    # Check if lyrics needs an update
+    if lyrics:
+        # pos is in microseconds
+        lyr_pos = float(pos / (10**6))
+        lyrics_ix = np.sum(lyr_pos >= lyrics["secs"]) - 1
+        lyrics_same = lyrics_ix == lyrics["last_ix"]
+    else:
+        lyrics_same = True
     # Check if song is the same (otherwise text needs to be updated)
     same_song = (
         last_metadata
@@ -358,21 +396,47 @@ def update_progressbar(manager, player):
         and metadata["artist"] == last_metadata["artist"]
         and metadata["album"] == last_metadata["album"]
         and metadata["length"] == last_metadata["length"]
+        and lyrics_same
     )
     if same_song and not pbar_needs_update and not rot_needs_update:
         logger.debug(
             "Song is the same and neither the text "
-            "nor the progressbar needs an update. Returning"
+            "nor the progressbar nor the lyrics needs an update. Returning"
         )
         return False
     # Write output
+    # Widget text
     widget_text = gen_widget_text(player)
+    # Tooltip text
     s = [metadata["title"], metadata["artist"], metadata["album"]]
+    # lyrics
+    curr_line = None
+    if lyrics:
+        # DEBUG
+        # print(f"lyrics['secs']={lyrics['secs']}")
+        # print(f"pos={pos}")
+        # print(f"length={length}")
+        # print(f"lyr_pos={lyr_pos}; lyrics_ix={lyrics_ix}")
+
+        lyrics["last_ix"] = lyrics_ix
+        span_before = 2
+        span_after = 2
+        to_put = np.arange(
+            max(lyrics_ix - span_before, 0),
+            min(lyrics_ix + span_after, len(lyrics["text"]) - 1) + 1,
+        )
+        for t in to_put:
+            s.append(lyrics["text"][t])
+            if t == lyrics_ix:
+                curr_line = len(s) - 1
+    # tooltip
     center_text(s)
+    if curr_line:
+        s[curr_line] = "<b>" + s[curr_line] + "</b>"
     tooltip = f"<span variant='title-caps' font_weight='bold'>{s[0]}</span>\n"
     tooltip += f"{s[1]}\n"
-    tooltip += f"<i>{s[2]}</i>"
-    # tooltip += f"<img src='" + artfp + "'></img>"
+    tooltip += f"<i>{s[2]}</i>\n\n"
+    tooltip += "\n".join(s[3:])
     write_output(widget_text, gen_class(perc), tooltip)
     # It's important to return True to keep the handler going
     last_metadata = metadata
@@ -419,7 +483,7 @@ def main():
     logging.basicConfig(
         stream=sys.stderr,
         level=logging.DEBUG,
-        format="[%(funcName)s] [%(levelname)s] %(message)s",
+        format="[%(name)s] [%(funcName)s] [%(levelname)s] %(message)s",
     )
 
     # Logging is set by default to WARN and higher.
@@ -428,6 +492,7 @@ def main():
     loglevel = max((3 - arguments.verbose) * 10, 0)
     logger.setLevel(loglevel)
     logging.getLogger("urllib3").setLevel(loglevel)
+    logging.getLogger("syncedlyrics").setLevel(loglevel)
 
     # Log the sent command line arguments
     logger.info("I was called")

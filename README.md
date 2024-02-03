@@ -14,12 +14,17 @@ Tooltip with track title, track artist and track album:
 
 ![tooltip](./showcase/tooltip.png)
 
+Synced lyrics in tooltip:
+
+![lyrics](./showcase/lyrics.png)
+
 It features:
 1. Progress bar
-1. Tooltip that displays title, author and album
-1. Album cover art (click to zoom)
-1. Optional notification on song change
-1. Click to play/pause, scroll up/down to scroll up/down on the playlist
+2. Tooltip that displays title, author and album
+3. Synced lyrics in tooltip
+4. Album cover art (click to zoom)
+5. Optional notification on song change
+6. Click to play/pause, scroll up/down to scroll up/down on the playlist
 
 # Requirements
 

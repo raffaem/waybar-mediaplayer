@@ -53,11 +53,20 @@ def on_player_appeared(manager, player, requested_player):
 
 def delete_album_art():
     p = Path(__file__)
-    if config["tray_dark"]:
+    if config["tray"] == "dark":
         trayfp = p.parents[1] / "assets" / "music_black.png"
-    else:
+    elif config["tray"] == "light":
         trayfp = p.parents[1] / "assets" / "music_white.png"
-    shutil.copy(trayfp, artfp)
+    elif config["tray"] == "no":
+        trayfp = None
+    else:
+        raise Exception(
+            "ERROR: Invalid value {config['tray']} for `tray` option"
+        )
+    if trayfp:
+        shutil.copy(trayfp, artfp)
+    else:
+        artfp.unlink()
     signal_album_art_change()
 
 

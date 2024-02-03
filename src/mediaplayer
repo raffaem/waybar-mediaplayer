@@ -65,7 +65,8 @@ def delete_album_art():
         phfp = None
     else:
         raise Exception(
-            "ERROR: Invalid value {config['album_art_placeholder']} for `album_art_placeholder` option"
+            f"ERROR: Invalid value {config['album_art_placeholder']} "
+            "for `album_art_placeholder` option"
         )
     if phfp:
         shutil.copy(phfp, artfp)
@@ -285,15 +286,22 @@ def update_metadata(player, metadata, manager):
     get_new_lyrics(artist, title)
     logger.debug("Returning")
 
+
 def get_new_lyrics(artist, title):
+    def finalize():
+        global lyrics
+        lyrics["secs"] = np.array(lyrics["secs"])
+        lyrics["max_len"] = max([len(x) for x in lyrics["text"]])
     global lyrics
-    lyrics = {"secs": np.array([0]), "text": ["[INTRO]"], "last_ix": -1}
+    lyrics = {"secs": [0], "text": ["[INTRO]"], "last_ix": -1}
     lt = syncedlyrics.search(
         f"{artist} {title}",
         allow_plain_format=False,
-        providers=config["lyrics_providers"]
+        providers=config["lyrics_providers"],
     )
     if lt is None:
+        logger.debug("No lyrics, returning")
+        finalize()
         return
     lt = lt.split("\n")
     for i, line in enumerate(lt):
@@ -305,13 +313,14 @@ def get_new_lyrics(artist, title):
         text = m.group(2).strip()
         if text == "":
             text = "[INTERMISSION]"
-        np.append(lyrics["secs"], [secs])
+        lyrics["secs"].append(secs)
         lyrics["text"].append(text)
         # DEBUG
-        # print(i, line, "->", "[" + str(secs) + "] ", text)
+        logger.debug(i, line, "->", "[" + str(secs) + "] ", text)
     lyrics["text"].append("[OUTRO]")
-    np.append(lyrics["secs"], [lyrics["secs"][-1]+1])
-    lyrics["max_len"] = max([len(x) for x in lyrics["text"]])
+    lyrics["secs"].append(lyrics["secs"][-1] + 1)
+    finalize()
+
 
 def left_text(s):
     le = len(s)
@@ -363,7 +372,7 @@ def update_progressbar(manager, player):
         # with the "mpris:length" key.
         # The length must be given in microseconds,
         # and be represented as a signed 64-bit integer
-        # see: https://specifications.freedesktop.org/mpris-spec/2.2/Track_List_Interface.html
+        # see: https://specifications.freedesktop.org/mpris-spec/2.2/Track_List_Interface.html # noqa: E501
         length = int(pmetadata["mpris:length"])
     except KeyError:
         logger.debug(
@@ -429,7 +438,7 @@ def update_progressbar(manager, player):
     curr_line = None
     if lyrics:
         ll = lyrics.get("max_len", 3)
-        s.append("-"*ll)
+        s.append("-" * ll)
 
         # DEBUG
         # print(f"lyrics['secs']={lyrics['secs']}")

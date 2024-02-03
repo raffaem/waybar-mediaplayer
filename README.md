@@ -36,10 +36,29 @@ The default configuration use `feh` to open the album art image.
 
 # Install
 
+Create a virtual environment within which to run waybar. For example, using pyenv this would be:
+```
+pyenv virtualenv 3.12.0 waybar
+pyenv activate waybar
+```
+
+You can create a wrapper script to run waybar inside this virtual environment. For example, always using pyenv:
+```
+#!/usr/bin/env bash
+. ~/.pyenv/versions/waybar/bin/activate
+waybar
+```
+
 Run:
 
 ```
 git clone https://github.com/raffaem/waybar-mediaplayer "$HOME/.config/waybar/waybar-mediaplayer"
+cd "$HOME/.config/waybar/waybar-mediaplayer"
+```
+
+Install the required python packages inside your virtual environment:
+```
+pip3 install -r requirements.txt
 ```
 
 You need to find the name of your player. To do so, run `playerctl --list-all` while your player is running.

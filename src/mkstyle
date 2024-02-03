@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import json
 import math
 import sys
@@ -34,7 +35,16 @@ def myround(x, y):
 # Internals
 format_pc = partial(myround, y=digits + 1)
 format_class = partial(myround, y=digits)
-outfp = Path(sys.argv[0]).parent.resolve() / "style.css"
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-file", action="store", default="style.css")
+    return parser.parse_args()
+
+
+args = parse_arguments()
+outfp = args.output_file
 print(f"Writing output to {outfp}")
 
 outfh = open(outfp, "w", encoding="utf8")

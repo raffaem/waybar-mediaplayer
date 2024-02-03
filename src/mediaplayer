@@ -256,7 +256,7 @@ def send_notification(summary, body):
 
 
 def update_metadata(player, metadata, manager):
-    global last_notification_time, last_art_url, is_text_rotating, lyrics
+    global last_notification_time, last_art_url, is_text_rotating
     logger.info("I was called")
     metadata = dict(metadata)
     # Update progressbar
@@ -282,13 +282,20 @@ def update_metadata(player, metadata, manager):
     )
     # Lyrics
     artist = player.get_artist() or ""
+    get_new_lyrics(artist, title)
+    logger.debug("Returning")
+
+def get_new_lyrics(artist, title):
+    global lyrics
+    lyrics = {"secs": np.array([0]), "text": ["[INTRO]"], "last_ix": -1}
     lt = syncedlyrics.search(
         f"{artist} {title}",
         allow_plain_format=False,
         providers=config["lyrics_providers"]
     )
+    if lt is None:
+        return
     lt = lt.split("\n")
-    lyrics = {"secs": [0], "text": ["[INTRO]"], "last_ix": -1}
     for i, line in enumerate(lt):
         m = re.match(r"\[(.*)\](.*)", line)
         timing = m.group(1)
@@ -298,16 +305,13 @@ def update_metadata(player, metadata, manager):
         text = m.group(2).strip()
         if text == "":
             text = "[INTERMISSION]"
-        lyrics["secs"].append(secs)
+        np.append(lyrics["secs"], [secs])
         lyrics["text"].append(text)
         # DEBUG
         # print(i, line, "->", "[" + str(secs) + "] ", text)
     lyrics["text"].append("[OUTRO]")
-    lyrics["secs"].append(lyrics["secs"][-1]+1)
-    lyrics["secs"] = np.array(lyrics["secs"])
+    np.append(lyrics["secs"], [lyrics["secs"][-1]+1])
     lyrics["max_len"] = max([len(x) for x in lyrics["text"]])
-    logger.debug("Returning")
-
 
 def left_text(s):
     le = len(s)

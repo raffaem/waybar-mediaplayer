@@ -280,7 +280,9 @@ def update_metadata(player, metadata, manager):
     # Lyrics
     artist = player.get_artist() or ""
     lt = syncedlyrics.search(
-        f"{artist} {title}", allow_plain_format=False, providers=["Musixmatch"]
+        f"{artist} {title}",
+        allow_plain_format=False,
+        providers=config["lyrics_providers"]
     )
     lt = lt.split("\n")
     lyrics = {"secs": [0], "text": [""], "last_ix": -1}
@@ -293,6 +295,7 @@ def update_metadata(player, metadata, manager):
         text = m.group(2).strip()
         lyrics["secs"].append(secs)
         lyrics["text"].append(text)
+        # DEBUG
         # print(i, line, "->", "[" + str(secs) + "] ", text)
     lyrics["secs"] = np.array(lyrics["secs"])
     logger.debug("Returning")
@@ -414,8 +417,7 @@ def update_progressbar(manager, player):
     if lyrics:
         # DEBUG
         # print(f"lyrics['secs']={lyrics['secs']}")
-        # print(f"pos={pos}")
-        # print(f"length={length}")
+        # print(f"pos={pos}; length={length}")
         # print(f"lyr_pos={lyr_pos}; lyrics_ix={lyrics_ix}")
 
         lyrics["last_ix"] = lyrics_ix

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 # Inspired by: https://github.com/Alexays/Waybar/blob/
 #              master/resources/custom_modules/mediaplayer.py
+# THis is a waybar module
 import argparse
 import json
 import logging

@@ -289,9 +289,12 @@ def update_metadata(player, metadata, manager):
 
 
 def download_lyrics(artist, title):
-    syncedlyrics.logger.setLevel(logging.INFO)
     stream = io.StringIO()
-    syncedlyrics.logger.addHandler(logging.StreamHandler(stream))
+    logger = syncedlyrics.logger
+    logger.propagate = False
+    logger.handlers.clear()
+    logger.addHandler(logging.StreamHandler(stream))
+    logger.setLevel(logging.INFO)
     lt = syncedlyrics.search(
         f"{artist} {title}",
         allow_plain_format=False,

@@ -290,17 +290,28 @@ def update_metadata(player, metadata, manager):
 
 def download_lyrics(artist, title):
     stream = io.StringIO()
-    logger = syncedlyrics.logger
-    logger.propagate = False
-    logger.handlers.clear()
-    logger.addHandler(logging.StreamHandler(stream))
-    logger.setLevel(logging.INFO)
+    lyrlogger = syncedlyrics.logger
+    lyrlogger.propagate = False
+    lyrlogger.handlers.clear()
+    lyrlogger.addHandler(logging.StreamHandler(stream))
+    lyrlogger.setLevel(logging.INFO)
     lt = syncedlyrics.search(
         f"{artist} {title}",
         allow_plain_format=False,
         providers=config["lyrics_providers"],
     )
-    lt = lt.split("\n")
+    # This is the main logger
+    # logger.debug("GOT LYRICS")
+    # logger.debug("-"*10)
+    # logger.debug(lt)
+    # logger.debug("-"*10)
+    lt = lt.replace("\n", "")
+    lt = lt.split("[")
+    lt = ["["+x for x in lt if x]
+    # logger.debug("SPLITTING")
+    # logger.debug("-"*10)
+    # logger.debug(lt)
+    # logger.debug("-"*10)
     provider = stream.getvalue().split("on ")[1].strip()
     stream.close()
     SyncedLyrics = namedtuple("SyncedLyrics", ["lt", "provider"])
@@ -313,13 +324,14 @@ def get_new_lyrics(artist, title):
         "secs": [0],
         "text": ["[INTRO]"],
         "last_ix": -1,
-        "max_len": 7,
+        "max_len": 0,
         "provider": None,
     }
     lyr = download_lyrics(artist, title)
     if lyr.lt is None:
         logger.debug("No lyrics, returning")
         return
+    lyrics["provider"] = lyr.provider
     for i, line in enumerate(lyr.lt):
         m = re.match(r"\[(.*)\](.*)", line)
         if not m:
@@ -330,25 +342,22 @@ def get_new_lyrics(artist, title):
         if len(timing2) != 2:
             logger.debug(f"ERROR: timing2={timing2} is not of length 2")
             continue
-        if not timing2[0].isnumeric():
-            logger.debug(f"ERROR: timing2[0]={timing2[0]} is not numeric")
+        try:
+            secs = int(timing2[0]) * 60.0 + float(timing2[1])
+        except ValueError:
+            logger.debug(f"ERROR: ValueError while converting timing2={timing2} to seconds")
             continue
-        if not timing2[1].isnumeric():
-            logger.debug(f"ERROR: timing2[1]={timing2[1]} is not numeric")
-            continue
-        secs = int(timing2[0]) * 60.0 + float(timing2[1])
         # get lyrics text
         text = m.group(2).strip()
         if text == "":
             text = "[INTERMISSION]"
         lyrics["secs"].append(secs)
         lyrics["text"].append(text)
+        lyrics["max_len"] = max(lyrics["max_len"], len(text))
         # DEBUG
-        logger.debug(i, line, "->", "[" + str(secs) + "] ", text)
+        logger.debug(str(i) + str(line) + "->" + "[" + str(secs) + "] " + text)
     lyrics["text"].append("[OUTRO]")
     lyrics["secs"].append(lyrics["secs"][-1] + 1)
-    lyrics["max_len"] = max([len(x) for x in lyrics["text"]])
-    lyrics["provider"] = lyr.provider
 
 
 def left_text(s):
@@ -471,7 +480,10 @@ def update_progressbar(manager, player):
     if lyrics:
         ll = lyrics.get("max_len", 3)
         s.append("-" * ll)
-        s.append("["+lyrics.get("provider", "")+"]")
+        provider = lyrics.get("provider","")
+        if provider is None:
+            provider = "NO PROVIDER"
+        s.append("["+provider+"]")
 
         # DEBUG
         # print(f"lyrics['secs']={lyrics['secs']}")
@@ -557,6 +569,8 @@ def main():
     loglevel = max((3 - arguments.verbose) * 10, 0)
     logger.setLevel(loglevel)
     logging.getLogger("urllib3").setLevel(loglevel)
+    logging.getLogger("syncedlyrics").setLevel(loglevel)
+
     logging.getLogger("syncedlyrics").setLevel(loglevel)
 
     # Log the sent command line arguments

@@ -322,10 +322,22 @@ def get_new_lyrics(artist, title):
         return
     for i, line in enumerate(lyr.lt):
         m = re.match(r"\[(.*)\](.*)", line)
+        if not m:
+            continue
+        # convert time from min:sec into sec
         timing = m.group(1)
         timing2 = timing.split(":")
-        assert len(timing2) == 2
+        if len(timing2) != 2:
+            logger.debug(f"ERROR: timing2={timing2} is not of length 2")
+            continue
+        if not timing2[0].isnumeric():
+            logger.debug(f"ERROR: timing2[0]={timing2[0]} is not numeric")
+            continue
+        if not timing2[1].isnumeric():
+            logger.debug(f"ERROR: timing2[1]={timing2[1]} is not numeric")
+            continue
         secs = int(timing2[0]) * 60.0 + float(timing2[1])
+        # get lyrics text
         text = m.group(2).strip()
         if text == "":
             text = "[INTERMISSION]"

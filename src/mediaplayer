@@ -305,6 +305,8 @@ def download_lyrics(artist, title):
     # logger.debug("-"*10)
     # logger.debug(lt)
     # logger.debug("-"*10)
+    if lt is None:
+        lt = ""
     lt = lt.replace("\n", "")
     lt = lt.split("[")
     lt = ["["+x for x in lt if x]

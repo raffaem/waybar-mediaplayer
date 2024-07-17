@@ -297,7 +297,7 @@ def download_lyrics(artist, title):
     lyrlogger.setLevel(logging.INFO)
     lt = syncedlyrics.search(
         f"{artist} {title}",
-        allow_plain_format=False,
+        synced_only=True,
         providers=config["lyrics_providers"],
     )
     # This is the main logger

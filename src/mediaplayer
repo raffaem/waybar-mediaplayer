@@ -514,7 +514,10 @@ def update_progressbar(manager, player):
         s[curr_line] = "<b>" + s[curr_line] + "</b>"
     tooltip = f"<span variant='title-caps' font_weight='bold'>{s[0]}</span>\n"
     tooltip += f"{s[1]}\n"
-    tooltip += f"<i>{s[2]}</i>\n"
+    # Skip album in tooltip if we don't have it
+    s[2] = s[2].strip()
+    if s[2]:
+        tooltip += f"<i>{s[2]}</i>\n"
     tooltip += "\n".join(s[3:])
     write_output(widget_text, gen_class(perc), tooltip)
     # It's important to return True to keep the handler going

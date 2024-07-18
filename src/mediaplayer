@@ -347,7 +347,8 @@ def get_new_lyrics(artist, title):
         try:
             secs = int(timing2[0]) * 60.0 + float(timing2[1])
         except ValueError:
-            logger.debug(f"ERROR: ValueError while converting timing2={timing2} to seconds")
+            logger.debug(f"ERROR: ValueError while converting timing2={
+                         timing2} to seconds")
             continue
         # get lyrics text
         text = m.group(2).strip()
@@ -463,10 +464,10 @@ def update_progressbar(manager, player):
         and metadata["length"] == last_metadata["length"]
         and lyrics_same
     )
-    # CHeck if we need to update
+    # Check if we need to update
     if same_song and \
-        not pbar_needs_update and \
-        not rot_needs_update:
+            not pbar_needs_update and \
+            not rot_needs_update:
         logger.debug(
             "Song is the same and neither the text "
             "nor the progressbar nor the lyrics needs an update. Returning"
@@ -482,7 +483,7 @@ def update_progressbar(manager, player):
     if lyrics:
         ll = lyrics.get("max_len", 3)
         s.append("-" * ll)
-        provider = lyrics.get("provider","")
+        provider = lyrics.get("provider", "")
         if provider is None:
             provider = "NO PROVIDER"
         s.append("["+provider+"]")

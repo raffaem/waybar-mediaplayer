@@ -305,11 +305,6 @@ def download_lyrics(artist, title):
         logger.debug(
             "ERROR: syncedlyrics.search threw an exception. Returning None.")
         return None
-    # This is the main logger
-    # logger.debug("GOT LYRICS")
-    # logger.debug("-"*10)
-    # logger.debug(lt)
-    # logger.debug("-"*10)
     if lt is None:
         logger.debug(
             "ERROR: syncedlyrics.search returned None. Returning None.")
@@ -317,10 +312,6 @@ def download_lyrics(artist, title):
     lt = lt.replace("\n", "")
     lt = lt.split("[")
     lt = ["["+x for x in lt if x]
-    # logger.debug("SPLITTING")
-    # logger.debug("-"*10)
-    # logger.debug(lt)
-    # logger.debug("-"*10)
     provider = stream.getvalue().split("on ")[1].strip()
     stream.close()
     SyncedLyrics = namedtuple("SyncedLyrics", ["lt", "provider"])
@@ -488,9 +479,12 @@ def update_progressbar(manager, player):
     s = [metadata["title"], metadata["artist"], metadata["album"]]
     # -- Lyrics
     curr_line = None
+    text_len = None
     if lyrics:
-        ll = lyrics.get("max_len", 3)
-        s.append("-" * ll)
+        cand = [len(x) for x in s]
+        cand.append(lyrics.get("max_len", 3))
+        text_len = max(cand)
+        s.append("-" * text_len)
         provider = lyrics.get("provider", "")
         if provider is None:
             provider = "NO PROVIDER"
@@ -518,7 +512,7 @@ def update_progressbar(manager, player):
             if t == lyrics_ix:
                 curr_line = len(s) - 1
     # -- Tooltip
-    center_text(s, lyrics.get("max_len", None))
+    center_text(s, text_len)
     if curr_line:
         s[curr_line] = "<b>" + s[curr_line] + "</b>"
     tooltip = f"<span variant='title-caps' font_weight='bold'>{s[0]}</span>"

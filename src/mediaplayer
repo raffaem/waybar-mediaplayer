@@ -295,18 +295,25 @@ def download_lyrics(artist, title):
     lyrlogger.handlers.clear()
     lyrlogger.addHandler(logging.StreamHandler(stream))
     lyrlogger.setLevel(logging.INFO)
-    lt = syncedlyrics.search(
-        f"{artist} {title}",
-        synced_only=True,
-        providers=config["lyrics_providers"],
-    )
+    try:
+        lt = syncedlyrics.search(
+            f"{artist} {title}",
+            synced_only=True,
+            providers=config["lyrics_providers"],
+        )
+    except Exception:
+        logger.debug(
+            "ERROR: syncedlyrics.search threw an exception. Returning None.")
+        return None
     # This is the main logger
     # logger.debug("GOT LYRICS")
     # logger.debug("-"*10)
     # logger.debug(lt)
     # logger.debug("-"*10)
     if lt is None:
-        lt = ""
+        logger.debug(
+            "ERROR: syncedlyrics.search returned None. Returning None.")
+        return None
     lt = lt.replace("\n", "")
     lt = lt.split("[")
     lt = ["["+x for x in lt if x]
@@ -330,8 +337,9 @@ def get_new_lyrics(artist, title):
         "provider": None,
     }
     lyr = download_lyrics(artist, title)
-    if lyr.lt is None:
-        logger.debug("No lyrics, returning")
+    if lyr is None:
+        logger.debug("ERROR: download_lyrics returned None. Returning.")
+        lyrics = None
         return
     lyrics["provider"] = lyr.provider
     for i, line in enumerate(lyr.lt):
@@ -513,13 +521,15 @@ def update_progressbar(manager, player):
     center_text(s, lyrics.get("max_len", None))
     if curr_line:
         s[curr_line] = "<b>" + s[curr_line] + "</b>"
-    tooltip = f"<span variant='title-caps' font_weight='bold'>{s[0]}</span>\n"
-    tooltip += f"{s[1]}\n"
+    tooltip = f"<span variant='title-caps' font_weight='bold'>{s[0]}</span>"
+    tooltip += f"\n{s[1]}"
     # Skip album in tooltip if we don't have it
     s[2] = s[2].strip()
     if s[2]:
-        tooltip += f"<i>{s[2]}</i>\n"
-    tooltip += "\n".join(s[3:])
+        tooltip += f"\n<i>{s[2]}</i>"
+    if len(s) >= 4 and s[3].strip():
+        tooltip += "\n"
+        tooltip += "\n".join(s[3:])
     write_output(widget_text, gen_class(perc), tooltip)
     # It's important to return True to keep the handler going
     last_metadata = metadata

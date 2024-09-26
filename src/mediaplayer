@@ -641,9 +641,16 @@ def on_player_vanished(manager, player_name, requested_player):
         logger.debug(f"Requested player '{requested_player[0]}' vanished. Checking for new players.")
 
         # Optionally, you could implement a check to see if any other players are currently active
-        available_players = [p.name for p in manager.props.players if p.name is not None]
+        try:
+            available_players = [p.name for p in manager.props.players if p.name is not None]
+    
+        except Exception:
+            logger.info("No Media Playing")
+            available_players = None
+            write_output("No Media Playing")
         
-        if available_players:
+
+        if available_players and available_players != None:
             # If there are other players available, choose the first one or implement your selection logic
             requested_player[0] = available_players[0]  # Set to the first available player
             logger.debug(f"New requested player set to: {requested_player[0]}")

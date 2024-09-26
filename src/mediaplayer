@@ -48,18 +48,6 @@ is_text_rotating = None
 lyrics = dict()
 
 
-def on_player_appeared(manager, player, requested_player):
-    logger.debug("I was called")
-    if player and (player.name == requested_player):
-        init_player(manager, player)
-    else:
-        logger.debug(
-            "New player appeared, but it's not the selected player, skipping"
-        )
-
-    logger.debug("Returning True")
-    return True
-
 
 def delete_album_art():
     p = Path(__file__)
@@ -81,13 +69,6 @@ def delete_album_art():
             artfp.unlink()
     signal_album_art_change()
 
-
-def on_player_vanished(manager, player):
-    logger.info("I was called")
-    write_output()
-    delete_album_art()
-    logger.info("Returning True")
-    return True
 
 
 def on_metadata(player, metadata, manager):
@@ -623,8 +604,8 @@ def on_player_appeared(manager, player_name, requested_player):
         for player in available_players:
             
             logger.debug(f"Auto :Initializing player: {player.name}")
-            
             init_player(manager, player.name)
+            on_refresh_interval(manager)
             break
         else:
             logging.debug(f"{requested_player}")
@@ -715,9 +696,7 @@ def main():
             logger.debug("This is not the filtered player, skipping it")
             
             continue
-        else:
-            logger.debug(f"Connected player '{player.name}'")
-            init_player(manager, player.name)
+        
         if arguments.command == "play-pause":
             Playerctl.Player.new(player.name).play_pause()
             sys.exit(0)

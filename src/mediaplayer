@@ -635,7 +635,7 @@ def on_player_appeared(manager, player_name, requested_player):
 
 def on_player_vanished(manager, player_name, requested_player):
     logger.debug(f"Player vanished: {player_name.name}")
-
+    
     # Check if the vanished player is the current requested player
     if requested_player[0] is not None and player_name.name == requested_player[0]:
         logger.debug(f"Requested player '{requested_player[0]}' vanished. Checking for new players.")
@@ -658,7 +658,10 @@ def on_player_vanished(manager, player_name, requested_player):
             logging.debug(requested_player)
             requested_player[0] = None  # No players are available
             logger.debug("No players available. Requested player set to None.")
-
+    else:
+        logger.info("No Media Playing")
+        available_players = None
+        write_output("No Media Playing")
 def main():
     arguments = parse_arguments()
 

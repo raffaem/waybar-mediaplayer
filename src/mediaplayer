@@ -389,19 +389,23 @@ def format_class(perc):
     if not isinstance(perc, float):
         raise Exception(f"{perc} ({type(perc)}) is not a float")
     
+    # Round down to the nearest integer for the percent representation
     rounded_perc = int(perc)  # Convert to integer to avoid decimals
     
+    # Create a string that matches the required format
     if rounded_perc >= 100:
-        return "100-0" 
+        return "100-0"  # Return a fixed class for 100%
     
-    return f"{rounded_perc}-0"  
+    return f"{rounded_perc}-0"  # Format for other percentages
 
 def gen_class(perc):
     if not isinstance(perc, float):
         raise Exception(f"{perc} ({type(perc)}) is not a float")
     
+    # Format the percentage using the format_class function
     formatted_perc = format_class(perc)
     
+    # Replace '.' with '-' for CSS class naming
     css_class = "perc" + formatted_perc.replace(".", "-")
     logger.debug(css_class)
     return css_class
@@ -417,8 +421,6 @@ def update_progressbar(manager, player):
     # Get percentage in the track
 
     pos = player.get_position()
-    
-       print(f"Error getting position: {e}")
 
     logger.debug(f"pos={pos}")
     # If it doesn't work, use CLI utility
@@ -470,15 +472,15 @@ def update_progressbar(manager, player):
     except Exception:
         metadata["title"] = "No Media Playing"
 
-	try:
-		metadata["artist"] = player.get_artist() or ""
-	except Exception:
-		metadata["artist"] = ""
+    try:
+	    metadata["artist"] = player.get_artist() or ""
+    except Exception:
+	    metadata["artist"] = ""
 
-	try:
-		metadata["album"] = player.get_album() or ""
-	except Exception:
-		metadata["album"] = ""
+    try:
+	    metadata["album"] = player.get_album() or ""
+    except Exception:
+	    metadata["album"] = ""
     # Check if a rotating text needs to be updated
     elapsed = (time.time() - last_rot_time) * 1000
     rot_needs_update = elapsed > config["text_rot_int"]
@@ -608,25 +610,41 @@ def parse_arguments():
 def on_player_appeared(manager, player_name, requested_player):
     logger.debug(f"Player appeared: {player_name.name}")
     available_players = manager.props.player_names
-
-    for player in available_players:
-        
-        logger.debug(f"Initializing player: {player.name}")
-        init_player(manager, player.name)
-        break
+    fp = Path(sys.argv[0]).parent.resolve() / "config.json"
+    if not fp.is_file():
+        logging.critical(f"ERROR: Configuration file {fp} not found")
+        sys.exit(1)
+    with open(fp, "r") as fh:
+        global config
+        config = json.load(fh)
+    logger.debug(f"config={config}")
+    pname = config.get("player_name")
+    if pname == "auto":
+        for player in available_players:
+            
+            logger.debug(f"Auto :Initializing player: {player.name}")
+            
+            init_player(manager, player.name)
+            break
+        else:
+            logging.debug(f"{requested_player}")
+            logger.warning("No matching player found for the requested player.")
     else:
-        logging.debug(f"{requested_player}")
-        logger.warning("No matching player found for the requested player.")
+        logging.debug(f"Manual: Setting player name to {pname}")
+        init_player(manager, pname)
 
 def on_player_vanished(manager, player_name, requested_player):
     logger.debug(f"Player vanished: {player_name.name}")
 
+    # Check if the vanished player is the current requested player
     if requested_player[0] is not None and player_name.name == requested_player[0]:
         logger.debug(f"Requested player '{requested_player[0]}' vanished. Checking for new players.")
 
+        # Optionally, you could implement a check to see if any other players are currently active
         available_players = [p.name for p in manager.props.players if p.name is not None]
         
         if available_players:
+            # If there are other players available, choose the first one or implement your selection logic
             requested_player[0] = available_players[0]  # Set to the first available player
             logger.debug(f"New requested player set to: {requested_player[0]}")
         else:
@@ -662,18 +680,24 @@ def main():
     # Remove album art if present
     delete_album_art()
 
+    # Set up player manager
     manager = Playerctl.PlayerManager()
     available_players = manager.props.player_names
 
     # Use a mutable container (list) to track the requested player
     requested_player = [None]
-
-    if available_players:
-        requested_player[0] = (available_players[0].name).split(".")[0]
-        logger.debug(f"Auto-selected player: {requested_player[0]}")
+    pname = config.get("player_name")
+    
+    if pname == "auto":
+        if available_players:
+            requested_player[0] = (available_players[0].name).split(".")[0]
+            logger.debug(f"Auto-selected player: {requested_player[0]}")
+        else:
+            logger.debug("No players available at startup.")
     else:
-        logger.debug("No players available at startup.")
-
+        logging.debug(f"Manual: Setting player name to {pname}")
+        requested_player[0] = pname.split(".")[0]
+        
     ini = False
     for player in available_players:
         logger.debug(f"Found player '{player.name}'")

@@ -713,7 +713,11 @@ def main():
         logger.debug(f"Found player '{player.name}'")
         if not player.name.startswith(requested_player[0]):
             logger.debug("This is not the filtered player, skipping it")
+            
             continue
+        else:
+            logger.debug(f"Connected player '{player.name}'")
+            init_player(manager, player.name)
         if arguments.command == "play-pause":
             Playerctl.Player.new(player.name).play_pause()
             sys.exit(0)

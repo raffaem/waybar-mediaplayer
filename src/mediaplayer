@@ -722,8 +722,8 @@ def main():
             sys.exit(1)
 
     if not ini:
-        logger.debug("No player found. Printing empty")
-        write_output()
+        logger.debug("No player found.")
+        write_output("No Media Playing")
 
     loop = GLib.MainLoop()
 

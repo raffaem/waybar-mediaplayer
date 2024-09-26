@@ -97,7 +97,7 @@ Put the following in `$HOME/.config/waybar/style.css`:
 #custom-mediaplayer
 {
   font-size: 16px;
-  border-radius: 2%;
+  border-radius: 10px 10px 10px 10px;
 }
 @import "./waybar-mediaplayer/src/style.css";
 ```
@@ -148,4 +148,3 @@ Run `exiftool SONG.mp3` and check the `Title`, `Album` and `Artist` fields.
 ## Me album art doesn't change on song change
 
 Make sure that the `signal` in the `image` module in `$HOME/.config/waybar/config` matches the number provided by `image_signal` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`.
-

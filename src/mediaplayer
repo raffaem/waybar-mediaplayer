@@ -37,23 +37,16 @@ last_rot_time = 0
 last_notification_time = 0
 # Whether refresh_interval callback is registered
 is_refint = False
-format_class = None
+#format_class = None
+
+
+current_player = None 
+
+
 icons = {"play": " ", "stop": " "}
 is_text_rotating = None
 lyrics = dict()
 
-
-def on_player_appeared(manager, player, requested_player):
-    logger.debug("I was called")
-    if player and (player.name == requested_player):
-        init_player(manager, player)
-    else:
-        logger.debug(
-            "New player appeared, but it's not the selected player, skipping"
-        )
-
-    logger.debug("Returning True")
-    return True
 
 
 def delete_album_art():
@@ -76,13 +69,6 @@ def delete_album_art():
             artfp.unlink()
     signal_album_art_change()
 
-
-def on_player_vanished(manager, player):
-    logger.info("I was called")
-    write_output()
-    delete_album_art()
-    logger.info("Returning True")
-    return True
 
 
 def on_metadata(player, metadata, manager):
@@ -380,10 +366,30 @@ def center_text(s, ml=None):
     return s
 
 
+def format_class(perc):
+    if not isinstance(perc, float):
+        raise Exception(f"{perc} ({type(perc)}) is not a float")
+    
+    # Round down to the nearest integer for the percent representation
+    rounded_perc = int(perc)  # Convert to integer to avoid decimals
+    
+    # Create a string that matches the required format
+    if rounded_perc >= 100:
+        return "100-0"  # Return a fixed class for 100%
+    
+    return f"{rounded_perc}-0"  # Format for other percentages
+
 def gen_class(perc):
     if not isinstance(perc, float):
         raise Exception(f"{perc} ({type(perc)}) is not a float")
-    return "perc" + format_class(perc).replace(".", "-")
+    
+    # Format the percentage using the format_class function
+    formatted_perc = format_class(perc)
+    
+    # Replace '.' with '-' for CSS class naming
+    css_class = "perc" + formatted_perc.replace(".", "-")
+    logger.debug(css_class)
+    return css_class
 
 
 # Called
@@ -394,7 +400,9 @@ def update_progressbar(manager, player):
     global last_metadata, lyrics
     logger.debug("I was called")
     # Get percentage in the track
+
     pos = player.get_position()
+
     logger.debug(f"pos={pos}")
     # If it doesn't work, use CLI utility
     if pos == 0:
@@ -432,14 +440,28 @@ def update_progressbar(manager, player):
     # Compute song percentage
     perc = (pos / (length / config["length_factor"])) * 100
     perc = min(perc, 100.0)
+    logger.debug(f'{perc}')
+
+
     metadata = {
-        "title": player.get_title() or "",
-        "artist": player.get_artist() or "",
-        "album": player.get_album() or "",
         "pos": pos,
         "length": length,
         "perc": perc,
     }
+    try:
+        metadata["title"] = player.get_title() or ""
+    except Exception:
+        metadata["title"] = "No Media Playing"
+
+    try:
+	    metadata["artist"] = player.get_artist() or ""
+    except Exception:
+	    metadata["artist"] = ""
+
+    try:
+	    metadata["album"] = player.get_album() or ""
+    except Exception:
+	    metadata["album"] = ""
     # Check if a rotating text needs to be updated
     elapsed = (time.time() - last_rot_time) * 1000
     rot_needs_update = elapsed > config["text_rot_int"]
@@ -524,6 +546,7 @@ def update_progressbar(manager, player):
     if len(s) >= 4 and s[3].strip():
         tooltip += "\n"
         tooltip += "\n".join(s[3:])
+            
     write_output(widget_text, gen_class(perc), tooltip)
     # It's important to return True to keep the handler going
     last_metadata = metadata
@@ -533,9 +556,10 @@ def update_progressbar(manager, player):
 
 def init_player(manager, name):
     logger.debug("I was called")
-    logger.debug(f"name.name={name.name}")
+    player_name = Playerctl.PlayerName(name)
     # Register handlers
-    player = Playerctl.Player.new_from_name(name)
+    player = Playerctl.Player.new_from_name(player_name)
+#    logger.debug(f"name.name={player.name}")
     player.connect("playback-status", on_playback_status, manager)
     player.connect("metadata", on_metadata, manager)
     manager.manage_player(player)
@@ -563,6 +587,62 @@ def parse_arguments():
     return parser.parse_args()
 
 
+
+def on_player_appeared(manager, player_name, requested_player):
+    logger.debug(f"Player appeared: {player_name.name}")
+    available_players = manager.props.player_names
+    fp = Path(sys.argv[0]).parent.resolve() / "config.json"
+    if not fp.is_file():
+        logging.critical(f"ERROR: Configuration file {fp} not found")
+        sys.exit(1)
+    with open(fp, "r") as fh:
+        global config
+        config = json.load(fh)
+    logger.debug(f"config={config}")
+    pname = config.get("player_name")
+    if pname == "auto":
+        for player in available_players:
+            
+            logger.debug(f"Auto :Initializing player: {player.name}")
+            init_player(manager, player.name)
+            on_refresh_interval(manager)
+            break
+        else:
+            logging.debug(f"{requested_player}")
+            logger.warning("No matching player found for the requested player.")
+    else:
+        logging.debug(f"Manual: Setting player name to {pname}")
+        init_player(manager, pname)
+
+def on_player_vanished(manager, player_name, requested_player):
+    logger.debug(f"Player vanished: {player_name.name}")
+    
+    # Check if the vanished player is the current requested player
+    if requested_player[0] is not None and player_name.name == requested_player[0]:
+        logger.debug(f"Requested player '{requested_player[0]}' vanished. Checking for new players.")
+
+        # Optionally, you could implement a check to see if any other players are currently active
+        try:
+            available_players = [p.name for p in manager.props.players if p.name is not None]
+    
+        except Exception:
+            logger.info("No Media Playing")
+            available_players = None
+            write_output("No Media Playing")
+        
+
+        if available_players and available_players != None:
+            # If there are other players available, choose the first one or implement your selection logic
+            requested_player[0] = available_players[0]  # Set to the first available player
+            logger.debug(f"New requested player set to: {requested_player[0]}")
+        else:
+            logging.debug(requested_player)
+            requested_player[0] = None  # No players are available
+            logger.debug("No players available. Requested player set to None.")
+    else:
+        logger.info("No Media Playing")
+        available_players = None
+        write_output("No Media Playing")
 def main():
     arguments = parse_arguments()
 
@@ -572,16 +652,6 @@ def main():
         level=logging.DEBUG,
         format="[%(name)s] [%(funcName)s] [%(levelname)s] %(message)s",
     )
-
-    # Logging is set by default to WARN and higher.
-    # With every occurrence of -v it's lowered by one
-    # until it reaches 0
-    loglevel = max((3 - arguments.verbose) * 10, 0)
-    logger.setLevel(loglevel)
-    logging.getLogger("urllib3").setLevel(loglevel)
-    logging.getLogger("syncedlyrics").setLevel(loglevel)
-
-    logging.getLogger("syncedlyrics").setLevel(loglevel)
 
     # Log the sent command line arguments
     logger.info("I was called")
@@ -601,27 +671,32 @@ def main():
     # Remove album art if present
     delete_album_art()
 
-    # Function to generate CSS classes
-    global format_class
-    interval = config["interval"]
-    digits = math.floor(math.log10(interval))
-    digits = max(0, math.fabs(digits))
-    digits = int(digits)
-    format_class = partial(lambda x, y: str(round(x, y)), y=digits)
-
+    # Set up player manager
     manager = Playerctl.PlayerManager()
+    available_players = manager.props.player_names
 
-    requested_player = config["player_name"].split(".")[0]
-    logger.debug(
-        f"Splitting player_name on `.`. requested_player={requested_player}"
-    )
-
+    # Use a mutable container (list) to track the requested player
+    requested_player = [None]
+    pname = config.get("player_name")
+    
+    if pname == "auto":
+        if available_players:
+            requested_player[0] = (available_players[0].name).split(".")[0]
+            logger.debug(f"Auto-selected player: {requested_player[0]}")
+        else:
+            logger.debug("No players available at startup.")
+    else:
+        logging.debug(f"Manual: Setting player name to {pname}")
+        requested_player[0] = pname.split(".")[0]
+        
     ini = False
-    for player in manager.props.player_names:
+    for player in available_players:
         logger.debug(f"Found player '{player.name}'")
-        if not player.name.startswith(requested_player):
+        if not player.name.startswith(requested_player[0]):
             logger.debug("This is not the filtered player, skipping it")
+            
             continue
+        
         if arguments.command == "play-pause":
             Playerctl.Player.new(player.name).play_pause()
             sys.exit(0)
@@ -640,23 +715,17 @@ def main():
             sys.exit(1)
 
     if not ini:
-        logger.debug("No player found. Printing empty")
-        write_output()
+        logger.debug("No player found.")
+        write_output("No Media Playing")
 
     loop = GLib.MainLoop()
 
-    on_player_appeared_inst = partial(
-        on_player_appeared, requested_player=requested_player
-    )
-    # manager.connect("player-appeared", on_player_appeared)
-    manager.connect("name-appeared", on_player_appeared_inst)
-    manager.connect("player-vanished", on_player_vanished)
-
-    # signal.signal(signal.SIGINT, signal_handler)
-    # signal.signal(signal.SIGTERM, signal_handler)
-    # signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    # Dynamically update requested_player on events
+    manager.connect("name-appeared", lambda m, p: on_player_appeared(m, p, requested_player))
+    manager.connect("name-vanished", lambda m, p: on_player_vanished(m, p, requested_player))
 
     loop.run()
+
 
 
 if __name__ == "__main__":

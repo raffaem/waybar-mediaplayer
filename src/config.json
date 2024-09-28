@@ -13,6 +13,7 @@
   "player_name": "spotify",
   "convert_to_jpeg": false,
   "album_art_placeholder": "no",
+  "show_on_empty": false,
   "lyrics_providers": [
     "Lrclib",
     "Musixmatch",

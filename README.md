@@ -117,6 +117,8 @@ git pull
 
 To disable notifications, put `is_notification=false` in `config.json`.
 
+To show even when nothing is playing, put `"show_on_empty": true` in `config.json`.
+
 To change widget's length, set `min-length` and `max-length` in `$HOME/.config/waybar/config`, and set `widget_length` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`. These 3 variables MUST be set to the same value.
 
 In order for the album art to automatically update on song change, it's important that the `signal` variable of the `image` module in `$HOME/.config/waybar/config` matches the `image_signal` variable in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`.
@@ -131,7 +133,7 @@ Although Firefox reports MPRIS metadata, the metadata it reports is not sufficie
 
 To have album art, make sure to set `convert_to_jpeg` to `true` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json` (this option decreases performance, don't use it if not necessary).
 
-## Me progress bar doesn't work
+## My progress bar doesn't work
 
 It's likely cause by the player not reporting song length or position back to us. Run `$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer -vvv` to debug.
 
@@ -139,13 +141,13 @@ It's likely cause by the player not reporting song length or position back to us
 
 If the player reports an instance after its name, please provide only the player name without the instance number. For example, [kew](https://github.com/ravachol/kew) may report itself as `kew123456`, where `123456` is an instance number which will change with different runs of `kew`. In this case, we report only `kew` without the instance number. This software will check whether the reported player name _starts_ with the name you provide to bind the correct player.
 
-## Me title and tooltip are empty
+## My title and tooltip are empty
 
 It's likely your song file doesn't contain metadata.
 
 Run `exiftool SONG.mp3` and check the `Title`, `Album` and `Artist` fields.
 
-## Me album art doesn't change on song change
+## My album art doesn't change on song change
 
 Make sure that the `signal` in the `image` module in `$HOME/.config/waybar/config` matches the number provided by `image_signal` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`.
 

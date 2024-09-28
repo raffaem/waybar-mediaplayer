@@ -18,6 +18,9 @@ from collections import namedtuple
 from functools import partial
 from pathlib import Path
 
+import os
+import fcntl
+
 import gi
 import requests
 import syncedlyrics
@@ -25,6 +28,10 @@ from PIL import Image
 
 gi.require_version("Playerctl", "2.0")
 from gi.repository import GLib, Playerctl  # noqa: E402
+
+LOCK_FILE = "/tmp/waybar-mediaplayer.lock"
+ALBUM_ART_FILE = "/tmp/waybar-mediaplayer-art"
+OUTPUT_FILE = "/tmp/waybar-mediaplayer.json"
 
 # Internal global variables
 config = None
@@ -41,6 +48,22 @@ format_class = None
 icons = {"play": " ", "stop": " "}
 is_text_rotating = None
 lyrics = dict()
+
+
+def acquire_lock():
+    try:
+        lock = open(LOCK_FILE, 'w')
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return lock
+    except IOError:
+        print("Another instance of waybar-mediaplayer is already running", file=sys.stderr)
+        sys.exit(1)
+
+
+def release_lock(lock):
+    fcntl.flock(lock, fcntl.LOCK_UN)
+    lock.close()
+    os.remove(LOCK_FILE)
 
 
 def on_player_appeared(manager, player, requested_player):
@@ -143,8 +166,8 @@ def write_output(text=None, class_=None, tooltip=""):
         "class": class_,
         "tooltip": "<span>" + tooltip + "</span>",
     }
-    sys.stdout.write(json.dumps(output) + "\n")
-    sys.stdout.flush()
+    with open(OUTPUT_FILE, 'w') as f:
+        f.write(json.dumps(output))
 
 
 def register_refresh_interval_callback(player, manager):
@@ -660,4 +683,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    lock = acquire_lock()
+    try:
+        main()
+    finally:
+        release_lock(lock)

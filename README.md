@@ -68,7 +68,7 @@ Open `"$HOME/.config/waybar/waybar-mediaplayer/src/config.json` and change `play
 Put the following in `$HOME/.config/waybar/config`:
 
 ```
-"modules-left": ["image", "custom/mediaplayer"],
+"modules-left": ["image", "custom/mediaplayer", "custom/mediaplayer/start"],
 ```
 
 ```
@@ -80,7 +80,8 @@ Put the following in `$HOME/.config/waybar/config`:
 },
 
 "custom/mediaplayer": {
-    "exec": "$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer monitor",
+    "exec": "cat /tmp/waybar-mediaplayer.json",
+    "interval": 1,
     "return-type": "json",
     "format": "{}",
     "on-click": "$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer play-pause",
@@ -88,6 +89,13 @@ Put the following in `$HOME/.config/waybar/config`:
     "on-scroll-down": "$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer previous",
     "min-length": 20,
     "max-length": 20
+},
+
+"custom/mediaplayer/start": {
+    "exec": "$HOME/.config/waybar/waybar-mediaplayer/src/mediaplayer monitor",
+    "interval": "once",
+    "format": "",
+    "hide_on_empty": true
 },
 ```
 

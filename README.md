@@ -117,6 +117,8 @@ git pull
 
 To disable notifications, put `is_notification=false` in `config.json`.
 
+To show even when nothing is playing, put `"show_on_empty": true` in `config.json`.
+
 To change widget's length, set `min-length` and `max-length` in `$HOME/.config/waybar/config`, and set `widget_length` in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`. These 3 variables MUST be set to the same value.
 
 In order for the album art to automatically update on song change, it's important that the `signal` variable of the `image` module in `$HOME/.config/waybar/config` matches the `image_signal` variable in `$HOME/.config/waybar/waybar-mediaplayer/src/config.json`.

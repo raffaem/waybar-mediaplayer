@@ -130,6 +130,8 @@ def write_output(text=None, class_=None, tooltip=""):
     # Default values if not explicitly set
     if not text:
         text = ""
+        if config["show_on_empty"]:
+            text = "" + (" " * (config["widget_length"] - 1))
     if not class_:
         class_ = gen_class(0.0)
     if not tooltip:

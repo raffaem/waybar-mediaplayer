@@ -1,5 +1,5 @@
 {
-  "refresh_interval": 500,
+  "refresh_interval": 1000,
   "is_notification": false,
   "notification_min_interval": 2,
   "widget_length": 20,

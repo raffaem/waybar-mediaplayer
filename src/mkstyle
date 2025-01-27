@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import argparse
 import json
 import math
@@ -45,9 +46,13 @@ def parse_arguments():
 
 args = parse_arguments()
 outfp = args.output_file
-print(f"Writing output to {outfp}")
 
-outfh = open(outfp, "w", encoding="utf8")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+abs_outfp = os.path.join(script_dir, outfp)
+
+print(f"Writing output to {abs_outfp}")
+
+outfh = open(abs_outfp, "w", encoding="utf8")
 
 for i in np.arange(0, 100 + interval, interval):
     i = float(i)
@@ -62,5 +67,4 @@ for i in np.arange(0, 100 + interval, interval):
     );
 }}\n"""
     )
-
 outfh.close()

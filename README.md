@@ -1,5 +1,11 @@
 # waybar-mediaplayer
-> __
+
+## Retirement notice
+
+I don't use this project anymore and therefore  I'm archiving it.
+
+Feel free to fork it.
+
 ## Introduction
 
 This is a mediaplayer for [waybar](https://github.com/Alexays/Waybar).

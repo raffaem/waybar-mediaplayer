@@ -1,5 +1,9 @@
 # waybar-mediaplayer
-> __
+
+Fork of the now-archived [waybar-mediaplayer](https://github.com/raffaem/waybar-mediaplayer).
+
+Right now only has fix for running script to change style from any directory.
+
 ## Introduction
 
 This is a mediaplayer for [waybar](https://github.com/Alexays/Waybar).
